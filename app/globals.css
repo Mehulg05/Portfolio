@@ -1,26 +1,445 @@
 @import "tailwindcss";
 
+/*
+  THE BUILD LOG — Schematic visual system
+  Phase 1: static build. No animation beyond instant hover feedback.
+  Committed single dark theme (see color-scheme below) — deliberate, not an omission.
+*/
+
+@theme {
+  --color-ground: #0b0e13;
+  --color-surface: #11151c;
+  --color-surface-2: #171c25;
+
+  --color-line: #232a35;
+  --color-line-bright: #2e3745;
+
+  --color-ink: #e6eaf2;
+  --color-ink-dim: #939dac;
+  /* Lightened from #626c7a, which failed WCAG AA (3.2:1) for the small mono labels. */
+  --color-ink-faint: #7a8595;
+
+  --color-accent: #5c8dff;
+  --color-accent-deep: #2b3f6e;
+  --color-redline: #ff9a5c;
+
+  --font-display: var(--font-plex-cond), "IBM Plex Sans Condensed", system-ui, sans-serif;
+  --font-sans: var(--font-plex), "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+section[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* Lenis — smooth scroll is opt-in and only mounted when motion is allowed. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+html.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+
+/*
+  Reveal-on-scroll. Content is visible by default and only hidden once JS has
+  confirmed motion is allowed (`js-motion` is set by a blocking script in <head>),
+  so crawlers, JS-off visitors and reduced-motion users always get the full page.
+*/
+.js-motion .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.js-motion .reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Hero load sequence — pure CSS, no JS dependency. */
+@keyframes build-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-rise {
+  animation: build-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--step, 0) * 90ms + 200ms);
+}
+.hero-word {
+  display: inline-block;
+  animation: build-rise 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .js-motion .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .hero-rise,
+  .hero-word {
+    animation: none;
+  }
+}
+
+/*
+  Hero identity stage. The name is sized in container-query units so one rule spans
+  the container at every width, and the portrait is layered in front of it.
+*/
+/*
+  Below lg the portrait is a percentage of the container, so the head is always wider
+  than any channel the words could leave. There the name sits above the portrait
+  instead — the name is absolutely positioned, so this padding moves only the portrait.
+  From lg the portrait is a fixed 380px and the channel composition fits.
+*/
+.hero-stage {
+  container-type: inline-size;
+  padding-top: 13.5cqw;
+}
+@media (min-width: 1024px) {
+  .hero-stage {
+    padding-top: 0;
+  }
+}
+/*
+  Each word is anchored off the centre line rather than laid out in sequence, so the
+  channel between them is exactly centred on the portrait. Anchoring on natural widths
+  instead would push the gap off-centre, because MEHUL is narrower than GUPTA.
+*/
+.hero-name {
+  --hero-gap: 2.5cqw; /* half the channel — a plain word space when stacked */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16.5cqw;
+  line-height: 0.82;
+  letter-spacing: -0.035em;
+  color: var(--color-line-bright);
+  user-select: none;
+}
+@media (min-width: 1024px) {
+  .hero-name {
+    --hero-gap: 7.8cqw; /* opens the channel the portrait stands in */
+    font-size: 14.4cqw;
+  }
+}
+.hero-name > span {
+  position: absolute;
+  top: 0;
+}
+.hero-name > span:first-child {
+  right: calc(50% + var(--hero-gap));
+}
+.hero-name > span:last-child {
+  left: calc(50% + var(--hero-gap));
+}
+
+/*
+  Greyscale underneath, colour on top behind a circular mask that follows the cursor.
+  --mx/--my are written by HeroPortrait; parked off-canvas so nothing shows before the
+  first pointer event.
+*/
+.hero-portrait {
+  --mx: -999px;
+  --my: -999px;
+  --spot-r: 96px;
+}
+@media (min-width: 640px) {
+  .hero-portrait {
+    --spot-r: 120px;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-portrait {
+    --spot-r: 140px;
+  }
+}
+
+.hero-portrait-base {
+  filter: grayscale(1) contrast(1.04);
+}
+.hero-portrait-colour {
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  -webkit-mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+}
+.hero-section.is-lit .hero-portrait-colour {
+  opacity: 1;
+}
+
+/* A faint accent wash tracking the cursor, so the whole section answers the pointer. */
+.hero-glow {
+  --gx: -999px;
+  --gy: -999px;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    circle 340px at var(--gx) var(--gy),
+    color-mix(in srgb, var(--color-accent) 13%, transparent),
+    transparent 72%
+  );
+}
+.hero-section.is-lit .hero-glow {
+  opacity: 1;
+}
+
+.hover-hint {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hover-hint {
+    display: block;
+  }
+}
+
+/* No hover available: show the colour portrait outright and drop the second layer. */
+@media (hover: none) {
+  .hero-portrait-base {
+    filter: none;
+  }
+  .hero-portrait-colour,
+  .hero-glow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-portrait-colour,
+  .hero-glow {
+    transition: none;
+  }
+}
+
+/* Case files — a native disclosure, so the whole interaction works without JavaScript. */
+.case-summary {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+}
+.case-summary::-webkit-details-marker {
+  display: none;
+}
+.case-summary:hover {
+  background-color: var(--color-surface-2);
+}
+.case-file[open] .case-summary:hover {
+  background-color: transparent;
+}
+/* `rotate` rather than `transform` — Tailwind's own transform handling wins the cascade. */
+.case-toggle {
+  transition:
+    rotate 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    color 0.3s ease;
+}
+.case-file[open] .case-toggle {
+  rotate: 45deg;
+  color: var(--color-accent);
+}
+
+/* Height animation where the browser supports it; an instant toggle everywhere else. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  .case-file::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+      content-visibility 0.45s;
+    transition-behavior: allow-discrete;
+  }
+  .case-file[open]::details-content {
+    block-size: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-toggle {
+    transition: none;
+  }
+  .case-file::details-content {
+    transition: none;
+  }
+}
+
+/*
+  Build diagram. The base state is the finished schematic, so no-JS, reduced-motion
+  and small-screen visitors see it fully drawn. The scrub only ever adds `is-pending`.
+*/
+.stage-wire {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  stroke-dashoffset: 0;
+}
+.stage-loop {
+  stroke: var(--color-line-bright);
+}
+.stage-loop-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  fill: var(--color-ink-faint);
+}
+.stage-node rect {
+  fill: var(--color-surface);
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  transition:
+    stroke 0.35s ease,
+    fill 0.35s ease;
+}
+.stage-node .stage-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--color-accent);
+  transition: fill 0.35s ease;
+}
+.stage-node .stage-name {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  fill: var(--color-ink);
+  transition: fill 0.35s ease;
+}
+.stage-node.is-pending rect {
+  fill: var(--color-ground);
+  stroke: var(--color-line-bright);
+}
+.stage-node.is-pending .stage-num,
+.stage-node.is-pending .stage-name {
+  fill: var(--color-ink-faint);
+}
+.stage-cell {
+  transition: opacity 0.4s ease;
+}
+.stage-cell.is-pending {
+  opacity: 0.32;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-node rect,
+  .stage-node .stage-num,
+  .stage-node .stage-name,
+  .stage-cell {
+    transition: none;
+  }
+}
+
+/* Schematic sheet grid — the one ambient texture on the page. */
+.sheet-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center top;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+}
+
+/* Registration ticks — the corner marks on a drawing frame. */
+.tick-frame {
+  position: relative;
+}
+.tick-frame::before,
+.tick-frame::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid var(--color-accent);
+}
+.tick-frame::before {
+  left: 0;
+  border-left: 1px solid var(--color-accent);
+}
+.tick-frame::after {
+  right: 0;
+  border-right: 1px solid var(--color-accent);
+}
+
+/* Connector rules between diagram stages. */
+.connector-h {
+  background-image: linear-gradient(
+    to right,
+    var(--color-line-bright) 0 6px,
+    transparent 6px 10px
+  );
+  background-size: 10px 1px;
+  background-repeat: repeat-x;
+  background-position: center;
+}
+.connector-v {
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-line-bright) 0 6px,
+    transparent 6px 10px
+  );
+  background-size: 1px 10px;
+  background-repeat: repeat-y;
+  background-position: center;
 }
