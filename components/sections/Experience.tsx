@@ -8,7 +8,7 @@ export function Experience() {
   return (
     <section id="experience" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
       <SectionHeader
-        index="05"
+        index="04"
         label="Experience"
         title="Products in production"
         caption="Work shipped for a company, where the constraints are somebody else's business, a regulator, and a platform that can shut you off."

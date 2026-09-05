@@ -10,7 +10,7 @@ export function CaseFiles() {
   return (
     <section id="case-files" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
       <SectionHeader
-        index="06"
+        index="05"
         label="Case files"
         title="Three problems, and what I decided"
         caption="Screenshots show what a thing looks like. These show what it cost to decide — the constraint, the call I made, and what I gave up to make it."
