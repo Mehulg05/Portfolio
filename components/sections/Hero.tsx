@@ -1,6 +1,6 @@
 import { Fragment, type CSSProperties } from "react";
 import { HeroPortrait } from "@/components/sections/HeroPortrait";
-import { profile } from "@/lib/content/profile";
+import { profile, targetRoles } from "@/lib/content/profile";
 
 const titleBlock = [
   { label: "Now", value: "Developer Trainee, Sahayogi One" },
@@ -9,6 +9,7 @@ const titleBlock = [
   { label: "Base", value: "Karnal / Greater Noida, IN" },
 ];
 
+const nameLines = profile.name.toUpperCase().split(" ");
 const headlineWords = profile.headline.split(" ");
 
 export function Hero() {
@@ -37,32 +38,63 @@ export function Hero() {
           </p>
         </div>
 
-        {/* Identity stage: the name is the backdrop, the portrait stands centred in front. */}
-        <div className="hero-stage relative mt-10 sm:mt-12">
-          {/*
-            Split so the gap between the words is controllable. Both words are five
-            letters, so the gap centres on the container — exactly where the portrait
-            stands — and the head sits between them instead of over a letter.
-          */}
-          <span className="hero-name" aria-hidden="true">
-            {profile.name
-              .toUpperCase()
-              .split(" ")
-              .map((word) => (
-                <span key={word}>{word}</span>
-              ))}
-          </span>
+        {/*
+          Identity stage. Name top-left, roles bottom-left against the foot of the
+          portrait, portrait down the right. Source order is the mobile order.
+        */}
+        <div className="hero-stage relative mt-10 grid gap-x-12 gap-y-9 sm:mt-14 lg:grid-cols-[minmax(0,1fr)_minmax(260px,380px)] lg:grid-rows-[auto_1fr] lg:gap-y-8">
+          <h1
+            className="hero-name hero-rise lg:col-start-1 lg:row-start-1"
+            style={{ "--step": 2 } as CSSProperties}
+          >
+            {nameLines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </h1>
 
           <div
-            className="hero-rise relative z-10 flex justify-center"
-            style={{ "--step": 2 } as CSSProperties}
+            className="hero-rise flex justify-center lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:justify-end"
+            style={{ "--step": 3 } as CSSProperties}
           >
             <HeroPortrait />
           </div>
+
+          <div
+            className="hero-rise lg:col-start-1 lg:row-start-2 lg:self-end lg:pb-2"
+            style={{ "--step": 4 } as CSSProperties}
+          >
+            <p
+              id="roles-label"
+              className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
+            >
+              Open to
+            </p>
+            {/*
+              --role-count drives the stagger, so adding or removing a role in
+              profile.ts retimes the cycle without touching the CSS.
+            */}
+            <ul
+              aria-labelledby="roles-label"
+              className="hero-roles mt-3.5 font-display text-2xl tracking-tight text-accent sm:text-[1.75rem]"
+              style={
+                {
+                  "--role-cycle": "12.5s",
+                  "--role-count": targetRoles.length,
+                } as CSSProperties
+              }
+            >
+              {targetRoles.map((role, i) => (
+                <li key={role} className="role-slot" style={{ "--i": i } as CSSProperties}>
+                  {role}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="relative z-10 mt-12 sm:mt-14">
-          <h1 className="max-w-[19ch] font-display text-[2.4rem] leading-[0.98] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
+        <div className="relative z-10 mt-14 sm:mt-16">
+          {/* The name above is the page h1, so the positioning line is a paragraph. */}
+          <p className="max-w-[19ch] font-display text-[2.4rem] leading-[0.98] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
             {headlineWords.map((word, i) => (
               // The space must sit outside the inline-block, or it collapses.
               <Fragment key={`${word}-${i}`}>
@@ -72,18 +104,18 @@ export function Hero() {
                 {i < headlineWords.length - 1 ? " " : null}
               </Fragment>
             ))}
-          </h1>
+          </p>
 
           <p
             className="hero-rise mt-6 max-w-[54ch] text-base leading-relaxed text-ink-dim sm:text-lg"
-            style={{ "--step": 4 } as CSSProperties}
+            style={{ "--step": 5 } as CSSProperties}
           >
             {profile.supporting}
           </p>
 
           <div
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"
-            style={{ "--step": 5 } as CSSProperties}
+            style={{ "--step": 6 } as CSSProperties}
           >
             <a
               href="#experience"
@@ -103,7 +135,7 @@ export function Hero() {
         {/* Title block — the stamp in the corner of an engineering drawing. */}
         <dl
           className="hero-rise relative z-10 mt-14 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
-          style={{ "--step": 6 } as CSSProperties}
+          style={{ "--step": 7 } as CSSProperties}
         >
           {titleBlock.map((item) => (
             <div key={item.label} className="bg-ground px-4 py-3.5">

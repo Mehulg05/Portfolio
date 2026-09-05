@@ -127,60 +127,68 @@ html.lenis-smooth {
 }
 
 /*
-  Hero identity stage. The name is sized in container-query units so one rule spans
-  the container at every width, and the portrait is layered in front of it.
-*/
-/*
-  Below lg the portrait is a percentage of the container, so the head is always wider
-  than any channel the words could leave. There the name sits above the portrait
-  instead — the name is absolutely positioned, so this padding moves only the portrait.
-  From lg the portrait is a fixed 380px and the channel composition fits.
-*/
-.hero-stage {
-  container-type: inline-size;
-  padding-top: 13.5cqw;
-}
-@media (min-width: 1024px) {
-  .hero-stage {
-    padding-top: 0;
-  }
-}
-/*
-  Each word is anchored off the centre line rather than laid out in sequence, so the
-  channel between them is exactly centred on the portrait. Anchoring on natural widths
-  instead would push the gap off-centre, because MEHUL is narrower than GUPTA.
+  Hero identity stage. Two columns: the name sits top-left, the role cycle sits under
+  it against the foot of the portrait, and the portrait holds the right column across
+  both rows. Below `lg` the grid collapses and the three stack in source order.
 */
 .hero-name {
-  --hero-gap: 2.5cqw; /* half the channel — a plain word space when stacked */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 0;
-  white-space: nowrap;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 16.5cqw;
-  line-height: 0.82;
+  /* Sized off the viewport rather than the column so the two lines stay one block. */
+  font-size: clamp(3rem, 9.5vw, 5.75rem);
+  line-height: 0.86;
   letter-spacing: -0.035em;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.hero-name span {
+  display: block;
+}
+.hero-name span:last-child {
   color: var(--color-line-bright);
-  user-select: none;
 }
-@media (min-width: 1024px) {
-  .hero-name {
-    --hero-gap: 7.8cqw; /* opens the channel the portrait stands in */
-    font-size: 14.4cqw;
-  }
+
+/*
+  Role cycle. Every role sits in the same box and takes its turn, so the block never
+  changes height. Pure CSS — it runs with JavaScript disabled, and the reduced-motion
+  block below turns it into a plain wrapped list rather than freezing on one entry.
+
+  Each item is on screen for one slot of the cycle; `--i` staggers the start. The
+  keyframe stops assume a slot is 20% of the cycle, which holds while --role-count is 5.
+*/
+.hero-roles {
+  position: relative;
+  min-height: 1.55em;
 }
-.hero-name > span {
+.role-slot {
   position: absolute;
-  top: 0;
+  inset: 0 auto auto 0;
+  white-space: nowrap;
+  opacity: 0;
+  animation: role-cycle var(--role-cycle) infinite;
+  animation-delay: calc(var(--i) * (var(--role-cycle) / var(--role-count)));
 }
-.hero-name > span:first-child {
-  right: calc(50% + var(--hero-gap));
-}
-.hero-name > span:last-child {
-  left: calc(50% + var(--hero-gap));
+@keyframes role-cycle {
+  0% {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+  1.8% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  18.2% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
 }
 
 /*
@@ -271,6 +279,19 @@ html.lenis-smooth {
   .hero-portrait-colour,
   .hero-glow {
     transition: none;
+  }
+  /* No cycling — every role is shown at once, as a plain list. */
+  .hero-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    min-height: 0;
+  }
+  .role-slot {
+    position: static;
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
 

@@ -17,6 +17,26 @@ export const profile = {
   // Phone deliberately omitted from the public site — it invites spam and adds nothing a recruiter needs.
 } as const;
 
+/*
+  The roles the search is aimed at, cycled in the hero.
+
+  Framed as "open to", not "qualified for" — it is a statement of intent, and every one
+  is defensible from the record: full-stack and backend from the NestJS/Next.js work
+  shipped at Sahayogi One, ML from the hyperspectral research, product from delivery
+  work done with the customer in the room.
+
+  NOTE: the CSS keyframes in `.role-slot` divide the cycle into as many equal slots as
+  there are entries here via `--role-count`. Changing the length of this list is safe;
+  the timing follows it.
+*/
+export const targetRoles = [
+  "Software Development Engineer",
+  "Backend Engineer",
+  "Full-Stack Developer",
+  "Machine Learning Engineer",
+  "Product Engineer",
+] as const;
+
 export const education = [
   {
     qualification: "B.Tech, Computer Science & Engineering",
