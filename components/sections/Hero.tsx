@@ -124,7 +124,7 @@ export function Hero() {
               See what I&apos;ve shipped
             </a>
             <a
-              href="#how-i-think"
+              href="#revision-history"
               className="border border-line-bright px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-dim hover:border-accent hover:text-accent"
             >
               Read how I think

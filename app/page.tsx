@@ -1,11 +1,9 @@
 import { SiteHeader } from "@/components/navigation/SiteHeader";
 import { Appendix } from "@/components/sections/Appendix";
-import { BuildProcess } from "@/components/sections/BuildProcess";
 import { CaseFiles } from "@/components/sections/CaseFiles";
 import { Contact } from "@/components/sections/Contact";
 import { Experience } from "@/components/sections/Experience";
 import { Hero } from "@/components/sections/Hero";
-import { Philosophy } from "@/components/sections/Philosophy";
 import { RevisionHistory } from "@/components/sections/RevisionHistory";
 import { Roadmap } from "@/components/sections/Roadmap";
 import { SystemMap } from "@/components/sections/SystemMap";
@@ -17,12 +15,10 @@ export default function Page() {
       <SiteHeader />
       <main className="flex-1">
         <Hero />
-        <Philosophy />
         <RevisionHistory />
         <SystemMap />
         <Experience />
         <CaseFiles />
-        <BuildProcess />
         <Roadmap />
         <Appendix />
         <Contact />

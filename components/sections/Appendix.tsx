@@ -1,5 +1,5 @@
 import { Reveal } from "@/components/animation/Reveal";
-import { certifications, education } from "@/lib/content/profile";
+import { certifications, courseraVerify, education } from "@/lib/content/profile";
 import { achievements } from "@/lib/content/roadmap";
 
 export function Appendix() {
@@ -34,10 +34,33 @@ export function Appendix() {
           <ul className="mt-5 flex flex-col gap-5">
             {certifications.map((item) => (
               <li key={item.name}>
-                <p className="text-sm text-ink">{item.name}</p>
+                {/*
+                  The name carries the link rather than a separate button — six buttons
+                  would double this column's height against Education and Achievements
+                  beside it. Still a labelled anchor, never a bare URL.
+                */}
+                {item.credentialId ? (
+                  <a
+                    href={`${courseraVerify}${item.credentialId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-ink hover:text-accent"
+                  >
+                    {item.name}
+                    <span aria-hidden="true"> ↗</span>
+                    <span className="sr-only">, verify credential</span>
+                  </a>
+                ) : (
+                  <p className="text-sm text-ink">{item.name}</p>
+                )}
                 <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
                   {item.issuer} · {item.date}
                 </p>
+                {item.credentialId ? (
+                  <p className="mt-1 font-mono text-[11px] break-all text-ink-faint">
+                    ID {item.credentialId}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

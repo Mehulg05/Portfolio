@@ -58,11 +58,34 @@ export const education = [
   },
 ] as const;
 
-export const certifications = [
+export type Certification = {
+  name: string;
+  issuer: string;
+  date: string;
+  /**
+   * Coursera credential ID. The public verify URL is derived from it, so the ID is the
+   * only thing stored — it is also the token a recruiter checks against.
+   * NVIDIA DLI issues no public verification link, so its entry has none.
+   */
+  credentialId?: string;
+};
+
+export const courseraVerify = "https://www.coursera.org/account/accomplishments/verify/";
+
+// Newest first. Grades are deliberately not published — name, issuer, date and a
+// verifiable ID are what a reader can act on.
+export const certifications: Certification[] = [
   {
-    name: "Build Better Generative Adversarial Networks",
+    name: "Build Better Generative Adversarial Networks (GANs)",
     issuer: "DeepLearning.AI",
     date: "Apr 2026",
+    credentialId: "R7256JI8RRI4",
+  },
+  {
+    name: "Agile Project Management",
+    issuer: "University of Colorado Boulder",
+    date: "Apr 2026",
+    credentialId: "56OLKTIE7GFH",
   },
   {
     name: "CUDA C Accelerated Computing",
@@ -70,8 +93,21 @@ export const certifications = [
     date: "Apr 2025",
   },
   {
-    name: "Operating Systems and You",
+    name: "Peer-to-Peer Protocols and Local Area Networks",
+    issuer: "University of Colorado System",
+    date: "Feb 2025",
+    credentialId: "JLO69TVL9DGL",
+  },
+  {
+    name: "Project Planning: Putting It All Together",
     issuer: "Google",
     date: "Feb 2025",
+    credentialId: "PHATYQ8DKWAT",
   },
-] as const;
+  {
+    name: "Introduction to TensorFlow for Artificial Intelligence, Machine Learning, and Deep Learning",
+    issuer: "DeepLearning.AI",
+    date: "Feb 2025",
+    credentialId: "N26Q5C13SQSR",
+  },
+];

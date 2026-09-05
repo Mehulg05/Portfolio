@@ -348,69 +348,6 @@ html.lenis-smooth {
   }
 }
 
-/*
-  Build diagram. The base state is the finished schematic, so no-JS, reduced-motion
-  and small-screen visitors see it fully drawn. The scrub only ever adds `is-pending`.
-*/
-.stage-wire {
-  fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 1;
-  stroke-dashoffset: 0;
-}
-.stage-loop {
-  stroke: var(--color-line-bright);
-}
-.stage-loop-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  fill: var(--color-ink-faint);
-}
-.stage-node rect {
-  fill: var(--color-surface);
-  stroke: var(--color-accent);
-  stroke-width: 1;
-  transition:
-    stroke 0.35s ease,
-    fill 0.35s ease;
-}
-.stage-node .stage-num {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  fill: var(--color-accent);
-  transition: fill 0.35s ease;
-}
-.stage-node .stage-name {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  fill: var(--color-ink);
-  transition: fill 0.35s ease;
-}
-.stage-node.is-pending rect {
-  fill: var(--color-ground);
-  stroke: var(--color-line-bright);
-}
-.stage-node.is-pending .stage-num,
-.stage-node.is-pending .stage-name {
-  fill: var(--color-ink-faint);
-}
-.stage-cell {
-  transition: opacity 0.4s ease;
-}
-.stage-cell.is-pending {
-  opacity: 0.32;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stage-node rect,
-  .stage-node .stage-num,
-  .stage-node .stage-name,
-  .stage-cell {
-    transition: none;
-  }
-}
-
 /* Schematic sheet grid — the one ambient texture on the page. */
 .sheet-grid {
   background-image:

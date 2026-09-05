@@ -8,7 +8,7 @@ import { profile } from "@/lib/content/profile";
 export function Contact() {
   return (
     <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-      <SectionHeader index="09" label="Open a thread" title="Have an idea worth building?" />
+      <SectionHeader index="07" label="Open a thread" title="Have an idea worth building?" />
 
       <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_340px] lg:gap-16">
         <div>

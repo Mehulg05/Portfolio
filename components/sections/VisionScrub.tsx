@@ -50,7 +50,7 @@ export function VisionScrub() {
         }
       >
         <div className="relative mx-auto w-full max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-          <SectionHeader index="08" label="Roadmap" title="Where this is going" />
+          <SectionHeader index="06" label="Roadmap" title="Where this is going" />
 
           <p className="mt-12 max-w-[20ch] font-display text-[2.1rem] leading-[1.05] tracking-tight text-ink sm:text-5xl">
             {vision.statement}

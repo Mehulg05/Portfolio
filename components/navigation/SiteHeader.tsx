@@ -6,14 +6,12 @@ import { profile } from "@/lib/content/profile";
 
 const sections = [
   { id: "top", index: "01", label: "Top" },
-  { id: "how-i-think", index: "02", label: "Think" },
-  { id: "revision-history", index: "03", label: "History" },
-  { id: "system-map", index: "04", label: "Stack" },
-  { id: "experience", index: "05", label: "Experience" },
-  { id: "case-files", index: "06", label: "Projects" },
-  { id: "how-i-build", index: "07", label: "Process" },
-  { id: "roadmap", index: "08", label: "Roadmap" },
-  { id: "contact", index: "09", label: "Contact" },
+  { id: "revision-history", index: "02", label: "History" },
+  { id: "system-map", index: "03", label: "Stack" },
+  { id: "experience", index: "04", label: "Experience" },
+  { id: "case-files", index: "05", label: "Projects" },
+  { id: "roadmap", index: "06", label: "Roadmap" },
+  { id: "contact", index: "07", label: "Contact" },
 ];
 
 const navSections = sections.slice(1);
