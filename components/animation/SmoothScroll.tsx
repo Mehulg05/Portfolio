@@ -2,6 +2,7 @@
 
 import type LenisType from "lenis";
 import { useEffect } from "react";
+import { registerSmoothScroll } from "@/lib/smooth-scroll";
 
 export function SmoothScroll() {
   useEffect(() => {
@@ -21,12 +22,15 @@ export function SmoothScroll() {
         // Header is sticky — land anchors below it.
         anchors: { offset: -72 },
       });
+      // Published so a modal can pause the wheel while it holds the screen.
+      registerSmoothScroll(lenis);
     };
 
     const disable = () => {
       document.documentElement.classList.remove("js-motion");
       lenis?.destroy();
       lenis = null;
+      registerSmoothScroll(null);
     };
 
     if (media.matches) disable();

@@ -1,12 +1,11 @@
-// [DRAFT] The vision statement is the single most important paragraph on the site.
-// This one is drawn from the actual thread running through Ocasio, UniRyde and the research.
-// If it isn't what you believe, rewrite it — but keep it this short.
+// The vision statement is the single most important paragraph on the site.
+// Drawn from the actual thread running through Ocasio, UniRyde and the research.
 
 export const vision = {
   statement:
     "I want to build systems that make good decisions with incomplete information.",
   body: [
-    "It's the thread through everything I've built. A recommendation for an event you have never planned. A match with a stranger you have to trust for the next forty minutes. A yield prediction for a field that hasn't been harvested yet.",
+    "It's the thread through everything I've built. A recommendation for an event you have never planned. A match with a stranger you have to trust for the length of a shared ride. A yield prediction for a field that hasn't been harvested yet.",
     "The interesting problems were never in the model or the interface. They're in what a system does when it isn't sure — how it handles the case it wasn't trained on, and whether it fails in a way a person can recover from.",
     "That's what I'm building toward: infrastructure that's honest about its own uncertainty, in places where being wrong actually costs someone something.",
   ],

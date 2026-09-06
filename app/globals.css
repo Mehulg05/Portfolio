@@ -34,6 +34,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reserved permanently so locking the page for a modal cannot shift it sideways.
+     A no-op on overlay-scrollbar platforms; ~15px of centred slack on Windows. */
+  scrollbar-gutter: stable;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -235,8 +238,15 @@ html.lenis-smooth {
   opacity: 1;
 }
 
-/* A faint accent wash tracking the cursor, so the whole section answers the pointer. */
-.hero-glow {
+/*
+  Torch. A small light that follows the cursor across the whole hero — not just the
+  portrait. Two gradients in one layer: a tiny bright core (the "bulb", ~9px) and a
+  soft accent falloff around it (~170px) — deliberately small, so it reads as a torch
+  passing over the scene rather than a spotlight sitting on it. Both gradients share
+  the same --gx/--gy already written every frame by HeroPortrait's rAF loop, so this
+  layer costs zero extra JS and never drifts out of sync with the portrait's own mask.
+*/
+.hero-torch {
   --gx: -999px;
   --gy: -999px;
   position: absolute;
@@ -244,40 +254,73 @@ html.lenis-smooth {
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.45s ease;
-  background: radial-gradient(
-    circle 340px at var(--gx) var(--gy),
-    color-mix(in srgb, var(--color-accent) 13%, transparent),
-    transparent 72%
-  );
+  transition: opacity 0.4s ease;
+  background:
+    radial-gradient(circle 9px at var(--gx) var(--gy), color-mix(in srgb, var(--color-ink) 85%, transparent), transparent 100%),
+    radial-gradient(circle 170px at var(--gx) var(--gy), color-mix(in srgb, var(--color-accent) 16%, transparent) 0%, transparent 75%);
 }
-.hero-section.is-lit .hero-glow {
+.hero-section.is-lit .hero-torch {
   opacity: 1;
 }
 
-.hover-hint {
-  display: none;
+/*
+  Bright grid — a second copy of the schematic grid, in accent, revealed only inside a
+  small radius around the torch. Same --gx/--gy as the torch above, so the grid lines
+  brighten exactly where the light passes rather than as a separate effect layered on top.
+*/
+.sheet-grid-bright {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
+  mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
+}
+.hero-section.is-lit .sheet-grid-bright {
+  opacity: 1;
+}
+
+/* The corner stamp cells brighten under a direct hover — the simplest honest way for a
+   discrete, non-continuous element to answer the same pointer without a second coordinate
+   system fighting the torch's section-relative one. */
+.hero-stat {
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease;
 }
 @media (hover: hover) and (pointer: fine) {
-  .hover-hint {
-    display: block;
+  .hero-stat:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-surface);
   }
 }
 
-/* No hover available: show the colour portrait outright and drop the second layer. */
+/*
+  No hover available: show the colour portrait outright and drop every layer keyed to
+  a moving cursor — the torch, the bright grid, and the glow it replaced.
+*/
 @media (hover: none) {
   .hero-portrait-base {
     filter: none;
   }
   .hero-portrait-colour,
-  .hero-glow {
+  .hero-torch,
+  .sheet-grid-bright {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-portrait-colour,
-  .hero-glow {
+  .hero-torch,
+  .sheet-grid-bright {
     transition: none;
   }
   /* No cycling — every role is shown at once, as a plain list. */
@@ -400,4 +443,102 @@ html.lenis-smooth {
   background-size: 1px 10px;
   background-repeat: repeat-y;
   background-position: center;
+}
+
+/*
+  Contact dialog — the form the Rive cat answers into.
+
+  A native <dialog>, so the focus trap, Esc and the top layer come from the platform.
+  What the UA sheet gets wrong is the look: <dialog> ships a light canvas, a groove
+  border and 1em of padding, which would drop a white box onto a near-black sheet. All
+  three are cleared here and the panel inside supplies the surface instead.
+*/
+.thread-dialog {
+  margin: auto;
+  width: 100%;
+  max-width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  /* 1px of headroom so the tick-frame corner marks, which sit at top:-1px, survive the
+     overflow clip that the max-height above introduces. */
+  padding: 1px 0 0;
+  border: 0;
+  overflow: hidden auto;
+  background: transparent;
+  color: var(--color-ink);
+
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+    overlay 0.28s allow-discrete,
+    display 0.28s allow-discrete;
+}
+.thread-dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+/* The open state is also the from-state, so the panel rises in rather than appearing. */
+@starting-style {
+  .thread-dialog[open] {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+/*
+  The page does not get hidden behind a flat scrim — it is dimmed and thrown out of
+  focus, so the sheet is still legible underneath and the dialog reads as a layer on
+  the same drawing rather than a different screen.
+*/
+.thread-dialog::backdrop {
+  background: color-mix(in srgb, #05070a 82%, transparent);
+  -webkit-backdrop-filter: blur(5px) saturate(0.85);
+  backdrop-filter: blur(5px) saturate(0.85);
+  opacity: 0;
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+    overlay 0.28s allow-discrete,
+    display 0.28s allow-discrete;
+}
+.thread-dialog[open]::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  .thread-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/*
+  Chrome paints autofilled inputs on a hard-coded pale background that ignores every
+  colour above. The inset shadow is the only way to take it back.
+*/
+.thread-dialog input:-webkit-autofill,
+.thread-dialog input:-webkit-autofill:hover,
+.thread-dialog input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-ground) inset;
+  caret-color: var(--color-ink);
+}
+
+/*
+  A modal <dialog> blocks clicks behind it but not the wheel, so the page has to be
+  pinned. `hidden` rather than `clip` because only a scroll container keeps the
+  scrollbar gutter reserved — with `clip` the gutter collapses and the whole page jumps
+  sideways the moment the dialog opens.
+
+  The second selector outranks Lenis's own `.lenis:not(.lenis-autoToggle).lenis-stopped`
+  rule, which sets `overflow: clip` as soon as the dialog calls stop().
+*/
+html[data-thread-open],
+html[data-thread-open].lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-dialog,
+  .thread-dialog::backdrop {
+    transition: none;
+  }
 }
