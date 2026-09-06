@@ -1,5 +1,4 @@
 // Case files. Problem/approach/stack are from the resume.
-// `tradeoff` lines are [DRAFT] readings of your feature set — confirm or rewrite them.
 // `outcome` is intentionally optional and left unset: no invented metrics ship on this site.
 // Fill it in only where you have a real number (users, rides matched, R²).
 
@@ -56,7 +55,7 @@ export const caseFiles: CaseFile[] = [
     role: "Concept, product definition and implementation.",
     stack: ["Web platform", "Recommendations", "Payments"],
     tradeoff:
-      "[DRAFT] The scarce effort went to verification and payment integrity rather than the booking interface — a beautiful booking flow on top of unverifiable vendors solves the wrong half of the problem.",
+      "The scarce effort went to verification and payment integrity, not the booking interface — a beautiful booking flow on top of unverifiable vendors still solves the wrong half of the problem.",
     repoNote: "Private repo",
   },
   {
@@ -85,7 +84,7 @@ export const caseFiles: CaseFile[] = [
     role: "Full-stack build — front end, data model and integrations.",
     stack: ["React.js", "HTML", "CSS", "MongoDB", "Google Maps API"],
     tradeoff:
-      "[DRAFT] Constraining the pool to verified students shrinks liquidity — fewer possible matches — in exchange for a pool where every match is defensible. For a safety product that trade is worth making.",
+      "Constraining the pool to verified students shrinks liquidity — fewer possible matches — for a pool where every match is defensible. On a safety product, that trade is worth making.",
     repoNote: "Private repo",
   },
   {
@@ -114,7 +113,7 @@ export const caseFiles: CaseFile[] = [
     role: "Framework design, modelling and evaluation.",
     stack: ["Python", "XGBoost", "SVR", "ElasticNet", "1D-CNN", "RFECV"],
     tradeoff:
-      "[DRAFT] Cross-environment evaluation reports worse headline numbers than a single-environment split would. It is also the only number that means anything to a farmer standing in a different field.",
+      "Cross-environment evaluation reports a worse headline number than a single-environment split would. It's also the only number that means anything to a farmer standing in a different field.",
     repoNote: "Private repo",
   },
 ];

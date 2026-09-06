@@ -19,22 +19,17 @@ export function Hero() {
       className="hero-section relative overflow-hidden border-b border-line"
     >
       <div className="sheet-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-      <div className="hero-glow" aria-hidden="true" />
+      <div className="sheet-grid-bright" aria-hidden="true" />
+      <div className="hero-torch" aria-hidden="true" />
 
       <div className="relative mx-auto max-w-6xl px-5 pt-14 pb-16 sm:px-8 sm:pt-16 sm:pb-20">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <p
             className="hero-rise flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
             style={{ "--step": 0 } as CSSProperties}
           >
             <span className="h-1.5 w-1.5 bg-accent" aria-hidden="true" />
             {profile.name} — build log
-          </p>
-          <p
-            className="hover-hint hero-rise font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
-            style={{ "--step": 1 } as CSSProperties}
-          >
-            Move the cursor across the portrait to develop it
           </p>
         </div>
 
@@ -138,7 +133,7 @@ export function Hero() {
           style={{ "--step": 7 } as CSSProperties}
         >
           {titleBlock.map((item) => (
-            <div key={item.label} className="bg-ground px-4 py-3.5">
+            <div key={item.label} className="hero-stat border border-transparent bg-ground px-4 py-3.5">
               <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
                 {item.label}
               </dt>

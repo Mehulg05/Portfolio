@@ -1,9 +1,8 @@
-// Facts sourced from Mehul_Gupta.pdf. Voice lines marked [DRAFT] need your sign-off.
+// Facts sourced from Mehul_Gupta.pdf.
 
 export const profile = {
   name: "Mehul Gupta",
-  // [DRAFT] Positioning line — replace if this isn't the thread you want pulled.
-  headline: "I build systems people trust with things that matter.",
+  headline: "I build systems people trust with what matters.",
   supporting:
     "A payment, a ride home, a season's harvest. Final-year CSE at Bennett University — building products end-to-end at Sahayogi One, and researching machine learning for precision agriculture.",
   role: "Developer Trainee, Sahayogi One",
