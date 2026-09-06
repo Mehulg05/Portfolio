@@ -61,12 +61,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-3 sm:px-8">
-        <a
-          href="#top"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink hover:text-accent"
-        >
-          MG<span className="text-ink-faint"> / build log</span>
-        </a>
+
 
         <nav aria-label="Sections" className="hidden lg:block">
           <ul className="flex items-center gap-5">
@@ -90,14 +85,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-5">
-          <span
-            aria-hidden="true"
-            className="hidden font-mono text-[11px] tracking-[0.14em] text-ink-faint tabular-nums lg:inline"
-          >
-            §{active.index} · {Math.round(progress * 100)}%
-          </span>
           <LinkButton href={profile.resume} newTab context="one page PDF">
-            Résumé
+            Resume
           </LinkButton>
         </div>
       </div>
