@@ -29,18 +29,18 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: `${profile.name} — Build Log`,
+  title: profile.name,
   description: profile.supporting,
   openGraph: {
-    title: `${profile.name} — Build Log`,
+    title: profile.name,
     description: profile.headline,
     url: siteUrl,
-    siteName: `${profile.name} — Build Log`,
+    siteName: profile.name,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${profile.name} — Build Log`,
+    title: profile.name,
     description: profile.headline,
   },
 };

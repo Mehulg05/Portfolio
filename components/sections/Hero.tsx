@@ -23,15 +23,6 @@ export function Hero() {
       <div className="hero-torch" aria-hidden="true" />
 
       <div className="relative mx-auto max-w-6xl px-5 pt-14 pb-16 sm:px-8 sm:pt-16 sm:pb-20">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <p
-            className="hero-rise flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
-            style={{ "--step": 0 } as CSSProperties}
-          >
-            <span className="h-1.5 w-1.5 bg-accent" aria-hidden="true" />
-            {profile.name} — build log
-          </p>
-        </div>
 
         {/*
           Identity stage. Name top-left, roles bottom-left against the foot of the
