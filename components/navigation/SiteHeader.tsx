@@ -14,7 +14,8 @@ const sections = [
   { id: "contact", index: "07", label: "Contact" },
 ];
 
-const navSections = sections.slice(1);
+const navSections = sections.slice(1, -1);
+const contactSection = sections[sections.length - 1];
 
 export function SiteHeader() {
   const [progress, setProgress] = useState(0);
@@ -88,6 +89,15 @@ export function SiteHeader() {
           <LinkButton href={profile.resume} newTab context="one page PDF">
             Resume
           </LinkButton>
+          <a
+            href={`#${contactSection.id}`}
+            aria-current={contactSection.id === activeId ? "true" : undefined}
+            className={`font-mono text-[11px] uppercase tracking-[0.14em] ${
+              contactSection.id === activeId ? "text-accent" : "text-ink-faint hover:text-ink"
+            }`}
+          >
+            {contactSection.label}
+          </a>
         </div>
       </div>
 
