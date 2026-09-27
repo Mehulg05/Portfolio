@@ -1,4 +1,4 @@
-# Build Log — Mehul Gupta
+Mehul Gupta
 
 Personal portfolio. Next.js 16 (App Router) · TypeScript · Tailwind v4.
 
