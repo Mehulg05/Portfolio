@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Copied from node_modules at build time by scripts/copy-rive-wasm.mjs
 public/rive.wasm
+
+.claude/
+.agent/
+CLAUDE.md
+AGENTS.md
