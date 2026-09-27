@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font
 import "./globals.css";
 import { SmoothScroll } from "@/components/animation/SmoothScroll";
 import { meta, profile } from "@/lib/content/profile";
+import { siteUrl } from "@/lib/site";
 
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex",
@@ -25,10 +26,10 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  alternates: { canonical: "/" },
   title: meta.title,
   description: meta.description,
   openGraph: {
@@ -39,8 +40,8 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    // Switch to summary_large_image once app/opengraph-image.png exists.
-    card: "summary",
+    // The image itself comes from app/twitter-image.tsx.
+    card: "summary_large_image",
     title: meta.title,
     description: meta.ogDescription,
   },

@@ -80,7 +80,7 @@ export function HeroPortrait() {
   return (
     <div
       ref={rootRef}
-      className="hero-portrait relative w-[72%] max-w-[380px] sm:w-[55%] lg:w-full lg:max-w-none"
+      className="hero-portrait relative w-full max-w-[260px] lg:max-w-none"
     >
       <Image
         src="/mehul-cutout.png"
@@ -89,7 +89,7 @@ export function HeroPortrait() {
         height={770}
         quality={90}
         priority
-        sizes="(min-width: 1024px) 380px, (min-width: 640px) 55vw, 72vw"
+        sizes="(min-width: 1024px) 380px, 40vw"
         className="hero-portrait-base h-auto w-full"
       />
       <Image
@@ -100,7 +100,7 @@ export function HeroPortrait() {
         height={770}
         quality={90}
         priority
-        sizes="(min-width: 1024px) 380px, (min-width: 640px) 55vw, 72vw"
+        sizes="(min-width: 1024px) 380px, 40vw"
         className="hero-portrait-colour absolute inset-0 h-auto w-full"
       />
     </div>

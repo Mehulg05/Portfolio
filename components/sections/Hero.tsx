@@ -24,15 +24,17 @@ export function Hero() {
       <div className="sheet-grid-bright" aria-hidden="true" />
       <div className="hero-torch" aria-hidden="true" />
 
-      <div className="relative mx-auto max-w-6xl px-5 pt-14 pb-16 sm:px-8 sm:pt-16 sm:pb-20">
+      <div className="relative mx-auto max-w-6xl px-5 pt-8 pb-14 sm:px-8 sm:pt-16 sm:pb-20">
 
         {/*
-          Identity stage. Name top-left, roles bottom-left against the foot of the
-          portrait, portrait down the right. Source order is the mobile order.
+          Identity stage. Name top-left, open-to line bottom-left against the foot of the
+          portrait, portrait down the right. Below lg the name and a smaller portrait share
+          the first row, with the open-to line under both, so a phone reaches the intro
+          without scrolling past a full-width photo.
         */}
-        <div className="hero-stage relative mt-10 grid gap-x-12 gap-y-9 sm:mt-14 lg:grid-cols-[minmax(0,1fr)_minmax(260px,380px)] lg:grid-rows-[auto_1fr] lg:gap-y-8">
+        <div className="hero-stage relative mt-4 grid grid-cols-[minmax(0,1fr)_40%] items-end gap-x-4 gap-y-7 sm:mt-14 sm:gap-x-8 sm:gap-y-9 lg:items-stretch lg:gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(260px,380px)] lg:grid-rows-[auto_1fr] lg:gap-y-8">
           <h1
-            className="hero-name hero-rise lg:col-start-1 lg:row-start-1"
+            className="hero-name hero-rise col-start-1 row-start-1 self-center lg:self-auto"
             style={{ "--step": 2 } as CSSProperties}
           >
             {nameLines.map((line) => (
@@ -41,14 +43,7 @@ export function Hero() {
           </h1>
 
           <div
-            className="hero-rise flex justify-center lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:justify-end"
-            style={{ "--step": 3 } as CSSProperties}
-          >
-            <HeroPortrait />
-          </div>
-
-          <div
-            className="hero-rise lg:col-start-1 lg:row-start-2 lg:self-end lg:pb-2"
+            className="hero-rise col-span-2 row-start-2 lg:col-span-1 lg:col-start-1 lg:self-end lg:pb-2"
             style={{ "--step": 4 } as CSSProperties}
           >
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
@@ -61,9 +56,16 @@ export function Hero() {
               Graduating {profile.graduation} · {profile.location}
             </p>
           </div>
+
+          <div
+            className="hero-rise col-start-2 row-start-1 flex justify-end lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:justify-end"
+            style={{ "--step": 3 } as CSSProperties}
+          >
+            <HeroPortrait />
+          </div>
         </div>
 
-        <div className="relative z-10 mt-14 sm:mt-16">
+        <div className="relative z-10 mt-10 sm:mt-16">
           {/* The name above is the page h1, so the intro is a paragraph. */}
           <p className="max-w-[26ch] font-display text-[2rem] leading-[1.05] tracking-tight text-ink sm:text-[2.6rem] lg:text-[3rem]">
             {introWords.map((word, i) => (
@@ -90,13 +92,13 @@ export function Hero() {
           >
             <a
               href="#experience"
-              className="bg-accent px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ground hover:bg-ink"
+              className="inline-flex min-h-11 items-center bg-accent px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ground hover:bg-ink"
             >
               Experience
             </a>
             <a
               href="#research"
-              className="border border-line-bright px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-dim hover:border-accent hover:text-accent"
+              className="inline-flex min-h-11 items-center border border-line-bright px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-dim hover:border-accent hover:text-accent"
             >
               Research
             </a>

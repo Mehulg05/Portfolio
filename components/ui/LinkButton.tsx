@@ -28,7 +28,7 @@ export function LinkButton({ href, children, context, newTab, tone = "default" }
       href={href}
       target={opensNewTab ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className={`inline-flex items-center gap-2 border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] ${tones[tone]}`}
+      className={`inline-flex min-h-11 items-center gap-2 border px-3.5 py-2 font-mono sm:min-h-10 text-[11px] uppercase tracking-[0.14em] ${tones[tone]}`}
     >
       <span>
         {children}

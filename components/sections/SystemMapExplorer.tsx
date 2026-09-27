@@ -44,7 +44,7 @@ function SkillChip({
         onMouseLeave={() => onShow(null)}
         onFocus={() => onShow(skill)}
         onBlur={() => onShow(null)}
-        className={`flex w-full items-center gap-2 border border-transparent px-1.5 py-px text-left text-[13px] leading-5 text-ink transition-opacity duration-300 hover:border-line-bright focus-visible:border-accent ${
+        className={`flex w-full items-center gap-2 border border-transparent px-1.5 py-2.5 text-left text-[13px] sm:py-px leading-5 text-ink transition-opacity duration-300 hover:border-line-bright focus-visible:border-accent ${
           dimmed ? "opacity-25" : ""
         }`}
       >
@@ -79,7 +79,7 @@ export function SystemMapExplorer() {
                 aria-pressed={isActive}
                 title={item.hint}
                 onClick={() => setFilter(isActive ? null : item.depth)}
-                className={`flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ${
+                className={`flex min-h-11 items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] sm:min-h-0 ${
                   isActive
                     ? "border-accent bg-surface text-ink"
                     : "border-line text-ink-faint hover:border-line-bright hover:text-ink-dim"

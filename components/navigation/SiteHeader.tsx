@@ -105,11 +105,16 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-3 sm:px-8">
-
-
-        <nav aria-label="Sections" className="hidden lg:block">
-          <ul className="flex items-center gap-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-1.5 sm:px-8 lg:gap-6 lg:py-3">
+        {/*
+          Below lg the same links sit in one row that scrolls sideways, so a phone gets a
+          section menu too. Links are 44px tall there for touch; on desktop they shrink back.
+        */}
+        <nav
+          aria-label="Sections"
+          className="-ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
+        >
+          <ul className="flex items-center gap-1 whitespace-nowrap lg:gap-5">
             {navSections.map((section) => {
               const isActive = section.id === activeId;
               return (
@@ -117,7 +122,7 @@ export function SiteHeader() {
                   <a
                     href={`#${section.id}`}
                     aria-current={isActive ? "true" : undefined}
-                    className={`font-mono text-[11px] uppercase tracking-[0.14em] ${
+                    className={`inline-flex min-h-11 items-center px-2 font-mono text-[11px] uppercase tracking-[0.14em] lg:min-h-0 lg:px-0 ${
                       isActive ? "text-accent" : "text-ink-faint hover:text-ink"
                     }`}
                   >
@@ -129,7 +134,7 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-5">
           <LinkButton href={profile.resume} newTab context="one page PDF">
             Resume
           </LinkButton>
