@@ -58,7 +58,7 @@ export function Contact() {
                 LinkedIn
               </LinkButton>
               <LinkButton href={profile.resume} newTab context="one page PDF">
-                Résumé (PDF)
+                Resume (PDF)
               </LinkButton>
             </div>
           </Reveal>
