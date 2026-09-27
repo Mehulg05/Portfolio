@@ -72,6 +72,14 @@ function stopListening() {
   }
 }
 
+/**
+ * Re-measure on the next frame. For layout changes that move things without a scroll
+ * or resize event — a disclosure opening, a pinned section changing height.
+ */
+export function refreshScrollProgress() {
+  if (listening) schedule();
+}
+
 export function observeScrollProgress(
   element: HTMLElement,
   callback: Callback,

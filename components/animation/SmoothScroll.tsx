@@ -16,12 +16,8 @@ export function SmoothScroll() {
       document.documentElement.classList.add("js-motion");
       const { default: Lenis } = await import("lenis");
       if (cancelled) return;
-      lenis = new Lenis({
-        duration: 1.05,
-        autoRaf: true,
-        // Header is sticky — land anchors below it.
-        anchors: { offset: -72 },
-      });
+      // Anchors are handled below, not by Lenis, so both paths land in the same place.
+      lenis = new Lenis({ duration: 1.05, autoRaf: true });
       // Published so a modal can pause the wheel while it holds the screen.
       registerSmoothScroll(lenis);
     };
@@ -33,6 +29,30 @@ export function SmoothScroll() {
       registerSmoothScroll(null);
     };
 
+    /*
+      In-page links land on the section's heading, just under the sticky header. Aiming at
+      the section itself left its top padding (80–112px) as empty space above the heading.
+    */
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href^="#"]');
+      const id = link?.getAttribute("href")?.slice(1);
+      const section = id ? document.getElementById(id) : null;
+      // #top is the skip link: left native so keyboard focus moves with it.
+      if (!link || !id || !section || id === "top") return;
+      event.preventDefault();
+
+      const heading = section.querySelector("header, h2") ?? section;
+      const bar = document.querySelector("header.sticky")?.getBoundingClientRect().height ?? 0;
+      const top = heading.getBoundingClientRect().top + window.scrollY - bar - 16;
+
+      if (lenis) lenis.scrollTo(top);
+      else window.scrollTo({ top, behavior: media.matches ? "auto" : "smooth" });
+      history.pushState(null, "", `#${id}`);
+    };
+    document.addEventListener("click", onClick);
+
     if (media.matches) disable();
     else enable();
 
@@ -41,6 +61,7 @@ export function SmoothScroll() {
 
     return () => {
       cancelled = true;
+      document.removeEventListener("click", onClick);
       media.removeEventListener("change", onChange);
       disable();
     };

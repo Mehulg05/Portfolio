@@ -92,15 +92,18 @@ export function ContactCatFrame() {
   }, []);
 
   return (
-    <figure ref={ref} className="m-0">
+    <figure ref={ref} className="m-0" title="Contact Cat animation by hello174 (CC BY)">
       {inView ? <ContactCat onAnswer={openThread} /> : <PlateTrigger onOpen={openThread} />}
 
       {/*
-        The CC BY credit used to sit here. It has moved to the site footer — the licence
-        still requires it, but a colophon is a more natural home for it than a caption.
+        The animation ("Contact Cat" by hello174, rive.app/marketplace/3977-8283-contact-cat)
+        is used under CC BY, which requires crediting the author. Mehul asked for no visible
+        credit (2026-09-28), so it lives on the figure as a hover title and in the
+        accessible name. Do not remove both.
       */}
       <figcaption className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
         Pick up the phone
+        <span className="sr-only">. Animation Contact Cat by hello174, CC BY licence.</span>
       </figcaption>
 
       <ContactDialog open={threadOpen} onClose={closeThread} />

@@ -242,7 +242,7 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
                   required
                   rows={5}
                   maxLength={2000}
-                  placeholder="What's the role, and what would I be working on?"
+                  placeholder="Your message"
                   className={`${field} resize-y`}
                 />
               </div>

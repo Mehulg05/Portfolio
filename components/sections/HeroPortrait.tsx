@@ -18,8 +18,28 @@ export function HeroPortrait() {
     const section = root?.closest("section");
     if (!root || !section) return;
 
-    // No hover means no spotlight — touch users get the colour image outright via CSS.
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    /*
+      No fine hover means no spotlight. CSS shows those devices the colour image instead,
+      after a one-off scan-in when motion is allowed. The scan waits for this attribute,
+      set once the image has really loaded; a stalled image releases the greyscale hold
+      without animating rather than sweeping an empty box.
+    */
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      const image = root.querySelector<HTMLImageElement>(".hero-portrait-base");
+      if (!image) return;
+      const start = () => {
+        if (!root.hasAttribute("data-scan")) root.dataset.scan = "run";
+      };
+      const giveUp = window.setTimeout(() => {
+        if (!root.hasAttribute("data-scan")) root.dataset.scan = "skip";
+      }, 4000);
+      if (image.complete && image.naturalWidth > 0) start();
+      else image.addEventListener("load", start, { once: true });
+      return () => {
+        window.clearTimeout(giveUp);
+        image.removeEventListener("load", start);
+      };
+    }
 
     let frame = 0;
     let clientX = 0;

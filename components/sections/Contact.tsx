@@ -8,7 +8,7 @@ import { profile } from "@/lib/content/profile";
 export function Contact() {
   return (
     <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-      <SectionHeader index="07" label="Open a thread" title="Have a role worth doing?" />
+      <SectionHeader index="07" label="Contact" title="Get in touch" />
 
       {/*
         Two panels separated by a hairline, the same gap-px/bg-line construction the
@@ -18,9 +18,9 @@ export function Contact() {
       <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line lg:grid-cols-[1.3fr_1fr]">
         <div className="bg-ground p-5 sm:p-7">
           <Reveal as="p" className="max-w-[46ch] text-lg leading-relaxed text-ink-dim">
-            I&apos;m a final-year CSE student, open to software, backend, full-stack, ML
-            and product engineering roles. If you&apos;re hiring for one of those — or
-            something adjacent — start a thread.
+            I graduate from Bennett University in {profile.graduation}. I&apos;m looking for
+            backend and full-stack engineering roles, and applied machine learning work.
+            Email is the quickest way to reach me.
           </Reveal>
 
           <Reveal className="mt-8">

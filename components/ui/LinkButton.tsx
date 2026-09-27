@@ -5,7 +5,7 @@ type Props = {
   children: ReactNode;
   /**
    * Appended to the accessible name, visually hidden, so the label still identifies
-   * its destination when read out of context ("Product site" → "Product site, BoSS").
+   * its destination when read out of context ("GitHub" → "GitHub, Mehul Gupta on GitHub").
    */
   context?: string;
   /** Same-origin destinations that still leave the page, e.g. a PDF. */

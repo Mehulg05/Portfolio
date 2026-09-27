@@ -4,20 +4,23 @@ import { FlowDiagram } from "@/components/ui/FlowDiagram";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Tag } from "@/components/ui/Tag";
-import { caseFiles } from "@/lib/content/projects";
+import { projects } from "@/lib/content/projects";
 
+// Renders nothing until a project is live. See lib/content/projects.ts.
 export function CaseFiles() {
+  if (projects.length === 0) return null;
+
   return (
-    <section id="case-files" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+    <section id="projects" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
       <SectionHeader
         index="05"
-        label="Case files"
-        title="Three problems, and what I decided"
-        caption="Screenshots show what a thing looks like. These show what it cost to decide — the constraint, the call I made, and what I gave up to make it."
+        label="Projects"
+        title="Projects"
+        caption="Live projects, with the problem, what I built and what I would change."
       />
 
       <div className="mt-14 flex flex-col gap-5">
-        {caseFiles.map((file, i) => (
+        {projects.map((file, i) => (
           <Reveal as="article" key={file.id}>
             {/*
               Native <details>: the whole disclosure works with zero JavaScript,
@@ -141,6 +144,11 @@ export function CaseFiles() {
                   ) : null}
 
                   <div className="flex flex-wrap items-center gap-3">
+                    {file.live ? (
+                      <LinkButton href={file.live.href} context={file.name} tone="accent">
+                        Live site
+                      </LinkButton>
+                    ) : null}
                     {file.repo ? (
                       <LinkButton href={file.repo.href} context={file.name}>
                         Read the code

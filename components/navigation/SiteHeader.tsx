@@ -1,62 +1,107 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { profile } from "@/lib/content/profile";
+import { projects } from "@/lib/content/projects";
+import { observeScrollProgress, refreshScrollProgress } from "@/lib/motion/scroll-progress";
 
 const sections = [
   { id: "top", index: "01", label: "Top" },
-  { id: "revision-history", index: "02", label: "History" },
-  { id: "system-map", index: "03", label: "Stack" },
-  { id: "experience", index: "04", label: "Experience" },
-  { id: "case-files", index: "05", label: "Projects" },
-  { id: "roadmap", index: "06", label: "Roadmap" },
-  { id: "contact", index: "07", label: "Contact" },
+  { id: "experience", index: "02", label: "Experience" },
+  { id: "research", index: "03", label: "Research" },
+  // Only once a live project exists. The section renders nothing before then.
+  ...(projects.length > 0 ? [{ id: "projects", index: "03", label: "Projects" }] : []),
+  { id: "system-map", index: "04", label: "Skills" },
+  { id: "revision-history", index: "05", label: "Timeline" },
+  { id: "education", index: "07", label: "Education" },
+  { id: "contact", index: "08", label: "Contact" },
 ];
 
 const navSections = sections.slice(1);
 
+// A section becomes current once its top crosses this fraction of the viewport.
+const READ_LINE = 0.35;
+
 export function SiteHeader() {
-  const [progress, setProgress] = useState(0);
   const [activeId, setActiveId] = useState(sections[0].id);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
   useEffect(() => {
-    let frame = 0;
+    const body = document.body;
 
-    const measure = () => {
-      frame = 0;
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - doc.clientHeight;
-      setProgress(scrollable > 0 ? Math.min(1, doc.scrollTop / scrollable) : 0);
+    /*
+      The scroll position at which each section becomes current: its top crossing the
+      reading line. Measured on layout changes only, so a scroll frame reads one number
+      (scrollY) instead of one rect per section, and the ticks and the nav label cannot
+      disagree. clientHeight rather than innerHeight, as before, so pinch-zoom and a
+      horizontal scrollbar do not move the line.
+    */
+    let lines: number[] = [];
 
-      // The section whose top has most recently crossed the upper third.
-      const line = doc.clientHeight * 0.35;
-      let current = sections[0].id;
-      for (const section of sections) {
-        const element = document.getElementById(section.id);
-        if (element && element.getBoundingClientRect().top <= line) {
-          current = section.id;
-        }
-      }
-      setActiveId(current);
+    const layout = () => {
+      const root = document.documentElement;
+      const viewport = root.clientHeight;
+      const travel = root.scrollHeight - viewport;
+
+      lines = navSections.map(({ id }) => {
+        const element = document.getElementById(id);
+        if (!element) return Infinity;
+        return element.getBoundingClientRect().top + window.scrollY - viewport * READ_LINE;
+      });
+
+      tickRefs.current.forEach((tick, index) => {
+        if (!tick) return;
+        const stop = travel > 0 ? lines[index] / travel : Infinity;
+        // A section that can never reach the line gets no tick, not one parked at the end.
+        const placed = stop <= 1;
+        tick.toggleAttribute("data-placed", placed);
+        // Held 1px inside the ruler, so the last tick can never widen the page.
+        if (placed) tick.style.left = `min(${Math.max(0, stop) * 100}%, 100% - 1px)`;
+      });
     };
 
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
+    // Progress is written straight to the DOM. Only the nav label goes through React.
+    const paint = (progress: number) => {
+      if (fillRef.current) fillRef.current.style.transform = `scaleX(${progress})`;
+
+      const y = window.scrollY;
+      let current = -1;
+      lines.forEach((line, index) => {
+        if (y >= line) current = index;
+      });
+
+      tickRefs.current.forEach((tick, index) => {
+        tick?.toggleAttribute("data-passed", index <= current);
+        tick?.toggleAttribute("data-current", index === current);
+      });
+
+      // Unchanged between most frames, and React skips the render when it is.
+      setActiveId(current < 0 ? sections[0].id : navSections[current].id);
     };
 
-    measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    // A disclosure opening or a pinned section changing height moves every section below it.
+    const resizeObserver = new ResizeObserver(() => {
+      layout();
+      refreshScrollProgress();
+    });
+    // The reading line and the travel both depend on the viewport height.
+    const onResize = () => layout();
+
+    layout();
+    const unsubscribe = observeScrollProgress(body, paint);
+    resizeObserver.observe(body);
+    window.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
 
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      unsubscribe();
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
     };
   }, []);
-
-  const active = sections.find((section) => section.id === activeId) ?? sections[0];
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
@@ -91,11 +136,27 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-px origin-left bg-accent"
-        style={{ transform: `scaleX(${progress})` }}
-      />
+      {/*
+        A ruler, not just a bar: one tick where each section becomes current. Ticks light
+        once passed and the current one stands taller. Hidden until measured, so nothing
+        stacks at the left edge before the first layout.
+      */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-px overflow-x-clip">
+        <div
+          ref={fillRef}
+          className="absolute inset-0 origin-left bg-accent"
+          style={{ transform: "scaleX(0)" }}
+        />
+        {navSections.map((section, index) => (
+          <span
+            key={section.id}
+            ref={(node) => {
+              tickRefs.current[index] = node;
+            }}
+            className="absolute bottom-0 hidden h-[5px] w-px bg-line-bright data-[current]:h-[9px] data-[passed]:bg-accent data-[placed]:block motion-safe:transition-[height,background-color] motion-safe:duration-200"
+          />
+        ))}
+      </div>
     </header>
   );
 }

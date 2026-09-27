@@ -1,7 +1,10 @@
-// Skills as a system, not a word cloud. `depth` is the honesty layer:
-// shipped = used in something real, research = used in the paper, learning = studied, not yet shipped.
+// Skills with where each one was used. `depth` must match the evidence:
+// shipped  = used in production at work
+// academic = used in a course or academic project that is not deployed
+// research = used in the manuscript
+// learning = studied, or in progress and not yet released
 
-export type Depth = "shipped" | "research" | "learning";
+export type Depth = "shipped" | "academic" | "research" | "learning";
 
 export type Skill = {
   name: string;
@@ -18,6 +21,7 @@ export type Stage = {
 
 export const depthLabels: Record<Depth, string> = {
   shipped: "Shipped",
+  academic: "Academic",
   research: "Research",
   learning: "Learning",
 };
@@ -25,42 +29,46 @@ export const depthLabels: Record<Depth, string> = {
 export const pipeline: Stage[] = [
   {
     id: "interface",
-    label: "Interface",
-    caption: "What the user actually touches",
+    label: "Frontend",
+    caption: "What the user sees",
     skills: [
-      { name: "React.js", depth: "shipped", note: "UniRyde's front end — routing, state, map views." },
-      { name: "JavaScript", depth: "shipped", note: "The glue across both platform projects." },
-      { name: "HTML / CSS", depth: "shipped", note: "Hand-written layouts before reaching for a kit." },
+      { name: "Next.js", depth: "shipped", note: "Payroll module at Sahayogi One, in production. Also this site." },
+      { name: "React.js", depth: "academic", note: "UniRyde's front end." },
+      { name: "HTML / CSS", depth: "academic", note: "UniRyde." },
     ],
   },
   {
-    id: "integration",
-    label: "Integration",
-    caption: "Where my system meets someone else's",
+    id: "backend",
+    label: "Backend",
+    caption: "Where requests are handled",
     skills: [
-      { name: "Google Maps API", depth: "shipped", note: "Routing and pickup matching in UniRyde." },
-      { name: "REST APIs", depth: "shipped", note: "The contract between client and service." },
-      { name: "Auth flows", depth: "shipped", note: "Student verification and secure sign-in." },
+      { name: "NestJS", depth: "shipped", note: "Payroll module APIs at Sahayogi One, in production." },
+      { name: "Role-based access control", depth: "shipped", note: "Three access levels in the payroll module. Role-based screens at RBH." },
+      { name: "Design docs (HLD, LLD)", depth: "shipped", note: "Written and approved before building the payroll module." },
+      { name: "WhatsApp Business APIs", depth: "learning", note: "Integrating them at work since Sep 2026. Not released yet." },
+      { name: "Auth and verification", depth: "academic", note: "Student verification and sign-in in UniRyde." },
+      { name: "Google Maps API", depth: "academic", note: "Routes and matching in UniRyde." },
     ],
   },
   {
-    id: "logic",
-    label: "Logic",
-    caption: "Where the decisions get made",
+    id: "languages",
+    label: "Languages",
+    caption: "What I write it in",
     skills: [
-      { name: "Python", depth: "shipped", note: "Research pipeline and automation work." },
-      { name: "C++", depth: "learning", note: "The language I learned data structures in." },
-      { name: "Java", depth: "learning", note: "Coursework and OOP fundamentals." },
-      { name: "DSA", depth: "shipped", note: "Not a checkbox — how I reason about cost." },
+      { name: "TypeScript", depth: "academic", note: "This site is written in it." },
+      { name: "JavaScript", depth: "academic", note: "UniRyde." },
+      { name: "Python", depth: "research", note: "The wheat-yield research." },
+      { name: "C++", depth: "academic", note: "Data structures and algorithms coursework." },
+      { name: "Java", depth: "learning", note: "Coursework." },
     ],
   },
   {
     id: "data",
     label: "Data",
-    caption: "What has to still be true tomorrow",
+    caption: "Where it is stored",
     skills: [
-      { name: "MongoDB", depth: "shipped", note: "UniRyde's document store — users, rides, matches." },
-      { name: "SQL", depth: "learning", note: "Relational modelling and querying." },
+      { name: "PostgreSQL", depth: "shipped", note: "The payroll module's schema, in production." },
+      { name: "MongoDB", depth: "academic", note: "UniRyde's database." },
     ],
   },
   {
@@ -68,25 +76,29 @@ export const pipeline: Stage[] = [
     label: "Platform",
     caption: "What it runs on",
     skills: [
-      { name: "AWS", depth: "learning", note: "Cloud fundamentals — deployment is where projects go to die." },
-      { name: "Operating systems", depth: "learning", note: "Certified with Google, Feb 2025." },
-      { name: "CUDA / GPU", depth: "learning", note: "NVIDIA CUDA C — parallelism at the metal." },
+      { name: "Docker", depth: "shipped", note: "Used at Sahayogi One." },
+      { name: "Linux / shell", depth: "academic", note: "Command-line basics for day-to-day development." },
+      { name: "AWS", depth: "learning", note: "Studying the basics." },
+      { name: "Operating systems", depth: "learning", note: "Google course, Feb 2025." },
+      { name: "CUDA C", depth: "learning", note: "NVIDIA course, Apr 2025." },
     ],
   },
 ];
 
 export const intelligence: Stage = {
   id: "intelligence",
-  label: "Intelligence",
-  caption: "The branch that decides under uncertainty",
+  label: "Machine learning",
+  caption: "Models from the wheat-yield manuscript (under review), and what I am learning now",
   skills: [
-    { name: "XGBoost", depth: "research", note: "Gradient boosting for yield regression." },
-    { name: "SVR", depth: "research", note: "Support vector regression baseline." },
-    { name: "ElasticNet", depth: "research", note: "Regularised linear baseline on spectral features." },
-    { name: "1D-CNN", depth: "research", note: "Deep model over the spectral axis." },
-    { name: "Stacked ensembles", depth: "research", note: "Where the accuracy actually came from." },
-    { name: "RFECV", depth: "research", note: "Feature selection across a very wide spectral space." },
-    { name: "GANs", depth: "learning", note: "DeepLearning.AI, Apr 2026." },
-    { name: "Agentic automation", depth: "learning", note: "Clawdbot — automating my own workflow first." },
+    { name: "XGBoost", depth: "research", note: "One of the models compared." },
+    { name: "SVR", depth: "research", note: "One of the models compared." },
+    { name: "ElasticNet", depth: "research", note: "One of the models compared." },
+    { name: "1D-CNN", depth: "research", note: "A neural model over the spectral bands." },
+    { name: "Stacked ensembles", depth: "research", note: "Combining the models above." },
+    { name: "RFECV", depth: "research", note: "Feature selection across the spectral bands." },
+    { name: "LLM APIs", depth: "learning", note: "Building with LLM APIs on my own." },
+    { name: "RAG", depth: "learning", note: "Retrieval-augmented generation: embeddings, retrieval, grounded answers." },
+    { name: "GANs", depth: "learning", note: "DeepLearning.AI course, Apr 2026." },
+    { name: "TensorFlow", depth: "learning", note: "DeepLearning.AI course, Feb 2025." },
   ],
 };

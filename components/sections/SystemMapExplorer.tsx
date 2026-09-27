@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Reveal } from "@/components/animation/Reveal";
-import { DepthBadge } from "@/components/ui/Tag";
 import {
   depthLabels,
   intelligence,
@@ -11,93 +10,65 @@ import {
   type Skill,
 } from "@/lib/content/skills";
 
-const filters: Array<{ depth: Depth; hint: string; tone: string }> = [
-  { depth: "shipped", hint: "used in something real", tone: "text-accent" },
-  { depth: "research", hint: "used in the paper", tone: "text-redline" },
-  { depth: "learning", hint: "studied, not yet shipped", tone: "text-ink-dim" },
+const filters: Array<{ depth: Depth; hint: string; tone: string; dot: string }> = [
+  { depth: "shipped", hint: "used in production at work", tone: "text-accent", dot: "bg-accent" },
+  { depth: "academic", hint: "used in coursework or academic projects", tone: "text-ink", dot: "bg-ink-dim" },
+  { depth: "research", hint: "used in the manuscript", tone: "text-redline", dot: "bg-redline" },
+  { depth: "learning", hint: "studied, or in progress and not yet released", tone: "text-ink-dim", dot: "bg-line-bright" },
 ];
+
+const dotFor = Object.fromEntries(filters.map((item) => [item.depth, item.dot])) as Record<Depth, string>;
+const hintFor = Object.fromEntries(filters.map((item) => [item.depth, item.hint])) as Record<Depth, string>;
 
 const allSkills = [...pipeline.flatMap((stage) => stage.skills), ...intelligence.skills];
 
-function SkillRow({ skill, dimmed }: { skill: Skill; dimmed: boolean }) {
+/*
+  Compact on purpose: one line per skill, so the whole map fits on one screen when the nav
+  lands here. The note that used to sit under every skill now shows in the readout line
+  when a chip is hovered or focused, and stays in the chip as screen-reader text.
+*/
+function SkillChip({
+  skill,
+  dimmed,
+  onShow,
+}: {
+  skill: Skill;
+  dimmed: boolean;
+  onShow: (skill: Skill | null) => void;
+}) {
   return (
-    <li className={dimmed ? "opacity-25 transition-opacity duration-300" : "transition-opacity duration-300"}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-ink">{skill.name}</span>
-        <DepthBadge depth={skill.depth} />
-      </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">{skill.note}</p>
+    <li>
+      <button
+        type="button"
+        onMouseEnter={() => onShow(skill)}
+        onMouseLeave={() => onShow(null)}
+        onFocus={() => onShow(skill)}
+        onBlur={() => onShow(null)}
+        className={`flex w-full items-center gap-2 border border-transparent px-1.5 py-px text-left text-[13px] leading-5 text-ink transition-opacity duration-300 hover:border-line-bright focus-visible:border-accent ${
+          dimmed ? "opacity-25" : ""
+        }`}
+      >
+        <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 ${dotFor[skill.depth]}`} />
+        <span>{skill.name}</span>
+        <span className="sr-only">
+          , {depthLabels[skill.depth]}. {skill.note}
+        </span>
+      </button>
     </li>
   );
 }
 
 export function SystemMapExplorer() {
   const [filter, setFilter] = useState<Depth | null>(null);
+  const [shown, setShown] = useState<Skill | null>(null);
 
   const isDimmed = (skill: Skill) => filter !== null && skill.depth !== filter;
   const matching = filter ? allSkills.filter((s) => s.depth === filter).length : allSkills.length;
 
   return (
     <>
-      {/* Flow bar */}
-      <Reveal className="mt-12 overflow-x-auto">
-        <div className="flex min-w-max items-center gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-dim">
-          {pipeline.map((stage, i) => (
-            <span key={stage.id} className="flex items-center gap-3">
-              <span className={i === 0 ? "text-accent" : undefined}>{stage.label}</span>
-              {i < pipeline.length - 1 ? (
-                <span className="text-ink-faint" aria-hidden="true">
-                  →
-                </span>
-              ) : null}
-            </span>
-          ))}
-        </div>
-      </Reveal>
-
-      {/* Pipeline stages */}
-      <div className="mt-5 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
-        {pipeline.map((stage, i) => (
-          <Reveal
-            key={stage.id}
-            delay={Math.min(i, 3) * 70}
-            className="bg-ground p-5 hover:bg-surface"
-          >
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              {stage.label}
-            </h3>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-ink-faint">
-              {stage.caption}
-            </p>
-            <ul className="mt-5 flex flex-col gap-4">
-              {stage.skills.map((skill) => (
-                <SkillRow key={skill.name} skill={skill} dimmed={isDimmed(skill)} />
-              ))}
-            </ul>
-          </Reveal>
-        ))}
-      </div>
-
-      {/* Intelligence branch */}
-      <Reveal className="mt-px flex flex-col items-center">
-        <div className="connector-v h-8 w-px" aria-hidden="true" />
-        <div className="w-full border border-line bg-surface p-5 sm:p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-redline">
-              {intelligence.label} — branch
-            </h3>
-            <p className="text-[12px] text-ink-faint">{intelligence.caption}</p>
-          </div>
-          <ul className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {intelligence.skills.map((skill) => (
-              <SkillRow key={skill.name} skill={skill} dimmed={isDimmed(skill)} />
-            ))}
-          </ul>
-        </div>
-      </Reveal>
-
-      {/* Legend doubles as a filter — "show me only what he's actually shipped". */}
-      <Reveal className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* The legend doubles as a filter, and sits above the map so it is read first. */}
+      <Reveal className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           {filters.map((item) => {
             const isActive = filter === item.depth;
@@ -106,15 +77,17 @@ export function SystemMapExplorer() {
                 key={item.depth}
                 type="button"
                 aria-pressed={isActive}
+                title={item.hint}
                 onClick={() => setFilter(isActive ? null : item.depth)}
-                className={`border px-3 py-1.5 font-mono text-[11px] tracking-[0.04em] ${
+                className={`flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ${
                   isActive
                     ? "border-accent bg-surface text-ink"
                     : "border-line text-ink-faint hover:border-line-bright hover:text-ink-dim"
                 }`}
               >
+                <span aria-hidden="true" className={`h-1.5 w-1.5 ${item.dot}`} />
                 <span className={item.tone}>{depthLabels[item.depth]}</span>
-                <span className="text-ink-faint"> — {item.hint}</span>
+                <span className="sr-only">: {item.hint}</span>
               </button>
             );
           })}
@@ -124,6 +97,59 @@ export function SystemMapExplorer() {
           {filter ? `${matching} of ${allSkills.length} shown` : `${allSkills.length} entries`}
         </p>
       </Reveal>
+
+      {/* Readout above the map: a fixed-height line, so hovering never moves the page. */}
+      <div
+        aria-hidden="true"
+        className="mt-3 flex min-h-[2.5rem] items-center gap-3 border border-accent/40 border-l-2 border-l-accent bg-accent-deep/25 px-4 py-2 text-[14px] leading-snug text-ink"
+      >
+        {shown ? (
+          <>
+            <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-accent">
+              {shown.name}
+            </span>
+            <span className="text-ink-faint">·</span>
+            <span className="text-ink">{shown.note}</span>
+          </>
+        ) : (
+          <span className="text-ink-dim">
+            Hover or focus a skill to see where I used it.
+            {filter ? ` Showing ${depthLabels[filter].toLowerCase()}: ${hintFor[filter]}.` : ""}
+          </span>
+        )}
+      </div>
+      {/* Pipeline stages */}
+      <div className="mt-3 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+        {pipeline.map((stage, i) => (
+          <Reveal key={stage.id} delay={Math.min(i, 3) * 70} className="bg-ground px-4 py-2.5">
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+              {i + 1 < 10 ? `0${i + 1}` : i + 1} · {stage.label}
+            </h3>
+            <p className="mt-0.5 text-[12px] leading-snug text-ink-faint">{stage.caption}</p>
+            <ul className="mt-1.5 flex flex-col">
+              {stage.skills.map((skill) => (
+                <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} onShow={setShown} />
+              ))}
+            </ul>
+          </Reveal>
+        ))}
+      </div>
+
+      {/* Intelligence branch */}
+      <Reveal className="mt-px border border-line bg-surface px-4 py-2.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-redline">
+            {intelligence.label}
+          </h3>
+          <p className="text-[12px] text-ink-faint">{intelligence.caption}</p>
+        </div>
+        <ul className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          {intelligence.skills.map((skill) => (
+            <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} onShow={setShown} />
+          ))}
+        </ul>
+      </Reveal>
+
     </>
   );
 }

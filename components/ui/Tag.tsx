@@ -11,6 +11,7 @@ export function Tag({ children }: { children: React.ReactNode }) {
 
 const depthStyles: Record<Depth, string> = {
   shipped: "border-accent/45 text-accent",
+  academic: "border-line-bright text-ink-dim",
   research: "border-redline/45 text-redline",
   learning: "border-line-bright text-ink-faint",
 };

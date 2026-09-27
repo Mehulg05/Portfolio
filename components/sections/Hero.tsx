@@ -1,16 +1,18 @@
 import { Fragment, type CSSProperties } from "react";
 import { HeroPortrait } from "@/components/sections/HeroPortrait";
-import { profile, targetRoles } from "@/lib/content/profile";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { profile } from "@/lib/content/profile";
 
+// The facts a screener checks first, in the order they check them.
 const titleBlock = [
-  { label: "Now", value: "Developer Trainee, Sahayogi One" },
-  { label: "Studying", value: "B.Tech CSE, Bennett University" },
-  { label: "Research", value: "Hyperspectral ML for crop yield" },
-  { label: "Base", value: "Karnal / Greater Noida, IN" },
+  { label: "Now", value: "Developer Trainee, Sahayogi One", detail: "Jun 2026 – present" },
+  { label: "Before", value: "Full Stack Developer Intern, RBH Solutions", detail: "Jun – Jul 2025" },
+  { label: "Studying", value: "B.Tech CSE, Bennett University", detail: `2023 – ${profile.graduation}` },
+  { label: "Research", value: "Wheat-yield prediction from hyperspectral data", detail: "Manuscript under review" },
 ];
 
 const nameLines = profile.name.toUpperCase().split(" ");
-const headlineWords = profile.headline.split(" ");
+const introWords = profile.intro.split(" ");
 
 export function Hero() {
   return (
@@ -49,45 +51,28 @@ export function Hero() {
             className="hero-rise lg:col-start-1 lg:row-start-2 lg:self-end lg:pb-2"
             style={{ "--step": 4 } as CSSProperties}
           >
-            <p
-              id="roles-label"
-              className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint"
-            >
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
               Open to
             </p>
-            {/*
-              --role-count drives the stagger, so adding or removing a role in
-              profile.ts retimes the cycle without touching the CSS.
-            */}
-            <ul
-              aria-labelledby="roles-label"
-              className="hero-roles mt-3.5 font-display text-2xl tracking-tight text-accent sm:text-[1.75rem]"
-              style={
-                {
-                  "--role-cycle": "12.5s",
-                  "--role-count": targetRoles.length,
-                } as CSSProperties
-              }
-            >
-              {targetRoles.map((role, i) => (
-                <li key={role} className="role-slot" style={{ "--i": i } as CSSProperties}>
-                  {role}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-3.5 max-w-[30ch] font-display text-2xl tracking-tight text-accent sm:text-[1.75rem]">
+              {profile.openTo}
+            </p>
+            <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              Graduating {profile.graduation} · {profile.location}
+            </p>
           </div>
         </div>
 
         <div className="relative z-10 mt-14 sm:mt-16">
-          {/* The name above is the page h1, so the positioning line is a paragraph. */}
-          <p className="max-w-[19ch] font-display text-[2.4rem] leading-[0.98] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
-            {headlineWords.map((word, i) => (
+          {/* The name above is the page h1, so the intro is a paragraph. */}
+          <p className="max-w-[26ch] font-display text-[2rem] leading-[1.05] tracking-tight text-ink sm:text-[2.6rem] lg:text-[3rem]">
+            {introWords.map((word, i) => (
               // The space must sit outside the inline-block, or it collapses.
               <Fragment key={`${word}-${i}`}>
                 <span className="hero-word" style={{ "--i": i } as CSSProperties}>
                   {word}
                 </span>
-                {i < headlineWords.length - 1 ? " " : null}
+                {i < introWords.length - 1 ? " " : null}
               </Fragment>
             ))}
           </p>
@@ -96,7 +81,7 @@ export function Hero() {
             className="hero-rise mt-6 max-w-[54ch] text-base leading-relaxed text-ink-dim sm:text-lg"
             style={{ "--step": 5 } as CSSProperties}
           >
-            {profile.supporting}
+            {profile.summary}
           </p>
 
           <div
@@ -107,18 +92,24 @@ export function Hero() {
               href="#experience"
               className="bg-accent px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ground hover:bg-ink"
             >
-              See what I&apos;ve shipped
+              Experience
             </a>
             <a
-              href="#revision-history"
+              href="#research"
               className="border border-line-bright px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-dim hover:border-accent hover:text-accent"
             >
-              Read how I think
+              Research
             </a>
+            <LinkButton href={`mailto:${profile.email}`} context="email Mehul">
+              Email
+            </LinkButton>
+            <LinkButton href={profile.linkedin} context="Mehul Gupta on LinkedIn">
+              LinkedIn
+            </LinkButton>
           </div>
         </div>
 
-        {/* Title block — the stamp in the corner of an engineering drawing. */}
+        {/* Title block: the stamp in the corner of an engineering drawing. */}
         <dl
           className="hero-rise relative z-10 mt-14 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
           style={{ "--step": 7 } as CSSProperties}
@@ -129,6 +120,7 @@ export function Hero() {
                 {item.label}
               </dt>
               <dd className="mt-1.5 text-sm text-ink">{item.value}</dd>
+              <dd className="mt-1 font-mono text-[11px] text-ink-faint">{item.detail}</dd>
             </div>
           ))}
         </dl>

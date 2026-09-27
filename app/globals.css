@@ -130,6 +130,128 @@ html.lenis-smooth {
 }
 
 /*
+  Section headers are plotted rather than faded: the rule draws left to right, the corner
+  ticks stamp at each end, the label types out one character per step (`--n` is its
+  length), then the title and caption rise. Same trigger as every other reveal
+  (`.is-revealed`) and the same `js-motion` gate, so without JavaScript or with reduced
+  motion the header is simply there.
+
+  The rule is a 1px background rather than a border so it can be drawn. The padding keeps
+  the pixel the border used to take, so nothing below it moves.
+*/
+.plot-header {
+  padding-top: calc(1.5rem + 1px);
+  background: linear-gradient(var(--color-line), var(--color-line)) left top / 100% 1px no-repeat;
+}
+.plot-header.tick-frame::before,
+.plot-header.tick-frame::after {
+  top: 0;
+}
+.plot-label {
+  display: inline-block;
+}
+
+/* The header opts out of the generic rise; its parts move instead. */
+.js-motion .plot-header.reveal {
+  opacity: 1;
+  transform: none;
+}
+.js-motion .plot-header:not(.is-revealed) {
+  background-size: 0% 1px;
+}
+.js-motion .plot-header:not(.is-revealed)::before,
+.js-motion .plot-header:not(.is-revealed)::after,
+.js-motion .plot-header:not(.is-revealed) .plot-title,
+.js-motion .plot-header:not(.is-revealed) .plot-caption {
+  opacity: 0;
+}
+.js-motion .plot-header:not(.is-revealed) .plot-label {
+  clip-path: inset(0 100% 0 0);
+}
+
+.js-motion .plot-header.is-revealed {
+  animation: plot-draw 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.js-motion .plot-header.is-revealed::before,
+.js-motion .plot-header.is-revealed::after {
+  transform-origin: top left;
+  animation: plot-stamp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.42s both;
+}
+.js-motion .plot-header.is-revealed::after {
+  transform-origin: top right;
+  animation-delay: 0.58s;
+}
+.js-motion .plot-header.is-revealed .plot-label {
+  animation: plot-type calc(var(--n) * 30ms) steps(var(--n)) 0.28s both;
+}
+.js-motion .plot-header.is-revealed .plot-title {
+  animation: build-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.62s both;
+}
+.js-motion .plot-header.is-revealed .plot-caption {
+  animation: build-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.76s both;
+}
+@keyframes plot-draw {
+  from {
+    background-size: 0% 1px;
+  }
+}
+@keyframes plot-stamp {
+  from {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@keyframes plot-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+/*
+  A background image is dropped in forced-colours mode and in default print, which would
+  erase the rule. Both get the plain border back, with the ticks on its line as before.
+*/
+@media (forced-colors: active), print {
+  .plot-header,
+  .js-motion .plot-header:not(.is-revealed),
+  .js-motion .plot-header.is-revealed {
+    background: none;
+    border-top: 1px solid var(--color-line);
+    padding-top: 1.5rem;
+  }
+  .plot-header.tick-frame::before,
+  .plot-header.tick-frame::after {
+    top: -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js-motion .plot-header:not(.is-revealed) {
+    background-size: 100% 1px;
+  }
+  .js-motion .plot-header:not(.is-revealed)::before,
+  .js-motion .plot-header:not(.is-revealed)::after,
+  .js-motion .plot-header:not(.is-revealed) .plot-title,
+  .js-motion .plot-header:not(.is-revealed) .plot-caption {
+    opacity: 1;
+  }
+  .js-motion .plot-header:not(.is-revealed) .plot-label {
+    clip-path: none;
+  }
+  .js-motion .plot-header.is-revealed,
+  .js-motion .plot-header.is-revealed::before,
+  .js-motion .plot-header.is-revealed::after,
+  .js-motion .plot-header.is-revealed .plot-label,
+  .js-motion .plot-header.is-revealed .plot-title,
+  .js-motion .plot-header.is-revealed .plot-caption {
+    animation: none;
+  }
+}
+
+/*
   Hero identity stage. Two columns: the name sits top-left, the role cycle sits under
   it against the foot of the portrait, and the portrait holds the right column across
   both rows. Below `lg` the grid collapses and the three stack in source order.
@@ -157,7 +279,8 @@ html.lenis-smooth {
   block below turns it into a plain wrapped list rather than freezing on one entry.
 
   Each item is on screen for one slot of the cycle; `--i` staggers the start. The
-  keyframe stops assume a slot is 20% of the cycle, which holds while --role-count is 5.
+  `role-cycle` keyframes are generated in Hero.tsx from the number of roles, because a
+  keyframe selector cannot take a variable — and hard-coded stops only fit one count.
 */
 .hero-roles {
   position: relative;
@@ -170,28 +293,6 @@ html.lenis-smooth {
   opacity: 0;
   animation: role-cycle var(--role-cycle) infinite;
   animation-delay: calc(var(--i) * (var(--role-cycle) / var(--role-count)));
-}
-@keyframes role-cycle {
-  0% {
-    opacity: 0;
-    transform: translateY(0.5em);
-  }
-  1.8% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  18.2% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  20% {
-    opacity: 0;
-    transform: translateY(-0.5em);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-0.5em);
-  }
 }
 
 /*
@@ -303,10 +404,14 @@ html.lenis-smooth {
 }
 
 /*
-  No hover available: show the colour portrait outright and drop every layer keyed to
-  a moving cursor — the torch, the bright grid, and the glow it replaced.
+  No fine hover means no spotlight: show the colour portrait outright and drop every
+  layer keyed to a moving cursor — the torch, the bright grid, and the glow it replaced.
+
+  The query is the exact negation of HeroPortrait's own gate, `(hover: hover) and
+  (pointer: fine)`. A bare `(hover: none)` missed devices that report hover with a coarse
+  pointer: they got no spotlight and no colour either, just a greyscale portrait.
 */
-@media (hover: none) {
+@media (hover: none), (pointer: coarse), (pointer: none) {
   .hero-portrait-base {
     filter: none;
   }
@@ -314,6 +419,106 @@ html.lenis-smooth {
   .hero-torch,
   .sheet-grid-bright {
     display: none;
+  }
+}
+
+/*
+  Scan-in. Without a spotlight there is nothing to discover, so the portrait gets one
+  moment of its own: it waits greyscale, then a scanline sweeps it into colour.
+
+  The sweep starts when HeroPortrait sets data-scan, which it does once the image has
+  actually loaded, so a slow connection never sees the line cross an empty box. Until
+  then `js-motion` holds the base greyscale; with no JavaScript there is no js-motion
+  and the portrait is simply in colour, as before. data-scan="skip" (a stalled image)
+  releases the hold without animating.
+
+  --scan is registered so the mask interpolates. The line has its own `top` keyframes,
+  so without @property the mask jumps at the end but the line still sweeps. On the last
+  frame the colour copy is hidden (steps(1, jump-end) holds each "from" value until
+  then), so the settled portrait is exactly the colour-outright version above.
+*/
+@property --scan {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: none), (pointer: coarse), (pointer: none) {
+    .js-motion .hero-portrait:not([data-scan]) .hero-portrait-base {
+      filter: grayscale(1) contrast(1.04);
+    }
+    .js-motion .hero-portrait[data-scan="run"] {
+      --scan-delay: 0.15s;
+      --scan-time: 1.6s;
+      --scan-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      animation: scan-in var(--scan-time) var(--scan-ease) var(--scan-delay) both;
+    }
+    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-base {
+      animation: scan-grey var(--scan-time) steps(1, jump-end) var(--scan-delay) backwards;
+    }
+    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-colour {
+      display: block;
+      visibility: hidden;
+      pointer-events: none;
+      opacity: 1;
+      transition: none;
+      animation: scan-cover var(--scan-time) steps(1, jump-end) var(--scan-delay) both;
+      -webkit-mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
+      mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
+    }
+    .js-motion .hero-portrait[data-scan="run"]::after {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      top: 0;
+      height: 1px;
+      background: var(--color-accent);
+      box-shadow: 0 0 12px var(--color-accent);
+      opacity: 0;
+      pointer-events: none;
+      animation:
+        scan-line var(--scan-time) linear var(--scan-delay) both,
+        scan-line-move var(--scan-time) var(--scan-ease) var(--scan-delay) both;
+    }
+  }
+}
+@keyframes scan-in {
+  from {
+    --scan: 0%;
+  }
+  to {
+    --scan: 108%;
+  }
+}
+@keyframes scan-grey {
+  from {
+    filter: grayscale(1) contrast(1.04);
+  }
+}
+/* Visible through the sweep, hidden (and so never hit-tested) from the last frame on. */
+@keyframes scan-cover {
+  from {
+    visibility: visible;
+  }
+}
+@keyframes scan-line {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8%,
+  88% {
+    opacity: 1;
+  }
+}
+/* Tracks the mask edge, which ends at 108% of the height, held at the bottom edge. */
+@keyframes scan-line-move {
+  from {
+    top: 0%;
+  }
+  92.6%,
+  to {
+    top: 100%;
   }
 }
 
