@@ -11,7 +11,7 @@ export function Experience() {
         index="02"
         label="Experience"
         title="Experience"
-        caption="Newest first. Work code is private to my employers."
+        caption="Most recent first. Source code belongs to the employers and is not public."
       />
 
       {/*

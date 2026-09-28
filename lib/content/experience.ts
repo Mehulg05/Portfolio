@@ -53,7 +53,6 @@ export const roles: Role[] = [
       "Wrote the HLD and LLD (database schema and API contracts) before any code. The senior team signed them off, and the module shipped only after code review and QA covering functional, edge-case and regression testing.",
       "Now integrating Meta's WhatsApp Business APIs into the company's messaging product.",
     ],
-    stack: ["Next.js", "NestJS", "PostgreSQL"],
     current: true,
   },
   {
@@ -62,7 +61,7 @@ export const roles: Role[] = [
     title: "Full Stack Developer Intern",
     period: "Jun – Jul 2025",
     summary:
-      "SCADA software, used to monitor industrial equipment remotely. My first professional codebase, where I worked on both the admin panel and the customer panel.",
+      "SCADA software for monitoring industrial equipment remotely. Worked across the admin panel and the customer panel.",
     highlights: [
       "Built role-based screens so each user sees only what their role allows: a super admin view to manage the whole system, a tech team view for the internal technical team, and a customer view limited to a client's own sites and data.",
       "Built and updated screens across the admin panel, where the system is run and configured.",

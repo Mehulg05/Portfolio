@@ -7,14 +7,14 @@
 export const profile = {
   name: "Mehul Gupta",
   graduation: "2027",
-  /** The page's first sentence. Plain facts, no slogan. */
+  /** The page's first sentence: where he is going, not where he has been. Experience lives below. */
   intro:
-    "I'm a final-year computer science student who already ships production software.",
-  /** What the work actually is, in the order a reader would check it. */
+    "Still learning, and eager to build the systems businesses run on and make them intelligent.",
+  /** Who he is. No employer names here: the Experience section carries those. */
   summary:
-    "As a developer trainee at Sahayogi One I designed and built a payroll module that is now live in production. Before that I interned at RBH Solutions on SCADA software. I study CSE at Bennett University, and my research on predicting wheat yield from hyperspectral data is a manuscript under review.",
+    "Final-year computer science student at Bennett University. Full-stack engineer by practice, machine learning researcher by interest. Comfortable owning a system from design to production, and curious about where a model could make it better. The aim is simple: software businesses can depend on, with intelligence built in.",
   /** One role family, stated once. Not cycled. */
-  openTo: "Backend and full-stack engineering roles, and applied machine learning",
+  openTo: "Backend, full-stack and AI/ML engineering roles",
   role: "Developer Trainee, Sahayogi One",
   location: "Karnal / Greater Noida, India",
   email: "mehulg2005@gmail.com",
@@ -28,7 +28,7 @@ export const profile = {
 
 /** Link preview and search copy, kept separate so it cannot drift into slogan territory. */
 export const meta = {
-  title: "Mehul Gupta · Developer Trainee at Sahayogi One · Bennett CSE",
+  title: "Mehul Gupta",
   description:
     "Final-year B.Tech CSE student at Bennett University. Developer Trainee at Sahayogi One, where I built a payroll module now in production. Wheat-yield research manuscript under review.",
   ogDescription:
