@@ -1,5 +1,5 @@
 import { Reveal } from "@/components/animation/Reveal";
-import { ContactCatFrame } from "@/components/sections/ContactCatFrame";
+import { ContactAirmail } from "@/components/sections/ContactAirmail";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -8,7 +8,7 @@ import { profile } from "@/lib/content/profile";
 export function Contact() {
   return (
     <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-      <SectionHeader index="07" label="Contact" title="Get in touch" />
+      <SectionHeader index="07" label="Contact" title="Let's build together" />
 
       {/*
         Two panels separated by a hairline, the same gap-px/bg-line construction the
@@ -18,13 +18,13 @@ export function Contact() {
       <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line lg:grid-cols-[1.3fr_1fr]">
         <div className="bg-ground p-5 sm:p-7">
           <Reveal as="p" className="max-w-[46ch] text-lg leading-relaxed text-ink-dim">
-            I graduate from Bennett University in {profile.graduation}. I&apos;m looking for
-            backend and full-stack engineering roles, and applied machine learning work.
-            Email is the quickest way to reach me.
+            Have an idea worth building, a problem worth solving, or a question about
+            something on this page? I&apos;m always up for a conversation with people who
+            make things. Send a note and I&apos;ll get back to you.
           </Reveal>
 
           <Reveal className="mt-8">
-            <ContactCatFrame />
+            <ContactAirmail />
           </Reveal>
         </div>
 

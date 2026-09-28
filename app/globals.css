@@ -688,7 +688,7 @@ html.lenis-smooth {
 }
 
 /*
-  Contact dialog — the form the Rive cat answers into.
+  Contact dialog — the form the contact line opens into.
 
   A native <dialog>, so the focus trap, Esc and the top layer come from the platform.
   What the UA sheet gets wrong is the look: <dialog> ships a light canvas, a groove
@@ -783,4 +783,45 @@ html[data-thread-open].lenis.lenis-stopped {
   .thread-dialog::backdrop {
     transition: none;
   }
+}
+
+/*
+  Contact toy — the envelope slingshot in the contact section (ContactAirmail.tsx).
+
+  Flight is driven by JavaScript; these are only the two idle flourishes, and the
+  component applies them after it has confirmed motion is allowed.
+*/
+@keyframes env-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.env-bob {
+  animation: env-bob 2.6s ease-in-out infinite;
+}
+
+@keyframes tray-badge-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.tray-badge-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tray-badge-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Where the shot will land: accent when it is the inbox, redline when it is the floor. */
+.landing-marker {
+  stroke: var(--color-redline);
+}
+.landing-marker[data-hit="yes"] {
+  stroke: var(--color-accent);
+}
+
+@keyframes miss-panel-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.miss-panel {
+  animation: miss-panel-in 220ms ease-out both;
 }
