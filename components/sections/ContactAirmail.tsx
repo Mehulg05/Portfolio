@@ -44,66 +44,211 @@ const TRAY_LETTERS = [
   { dx: -32, dy: 9, w: 60, h: 12, tilt: -1 },
 ];
 
-/* Physics, in viewBox units and seconds. */
+/* Physics, in viewBox units, degrees and seconds. */
 const GRAVITY = 900;
+const AIR_DRAG = 0.12; // per second: it is paper, not a cannonball
 const PULL_TO_SPEED = 5.2;
 const MAX_SPEED = 820;
+const LAUNCH_TUMBLE = 0.3; // deg/s of spin per unit of horizontal launch speed
 const WALL_BOUNCE = 0.55;
+const FLOOR_BOUNCE = 0.42;
+const FLOOR_GRIP = 0.72; // sideways speed kept through a floor bounce
+const SLIDE_DRAG = 5; // per second, once skidding along the floor
+const BOUNCE_MIN_VY = 110; // slower than this it skids instead of bouncing
+const TRAY_BOUNCE = 0.3;
 const MIN_LAUNCH_SPEED = 60;
+const REST_SPEED = 10;
+
+/* The slingshot's elastic: bands and post recoil as damped springs after a release. */
+const BAND_K = 1400;
+const BAND_ZETA = 0.22;
+const POST_K = 625;
+const POST_ZETA = 0.18;
+const POST_KICK = 0.12; // initial deg/s of post wobble per unit of launch speed
 
 /* Timings */
 const DELIVERED_TO_FORM_MS = 650;
 const RESET_AFTER_DELIVERY_MS = 1600;
-const FLIGHT_SAFETY_S = 5; // simulated time: a ball that never lands
-const FLIGHT_WATCHDOG_MS = 3500; // wall time: a tab that never paints
+const MISS_SETTLE_MS = 350; // let a missed envelope lie there a moment before the panel
+const FLIGHT_SAFETY_S = 9; // simulated time: a shot that never settles
+const FLIGHT_WATCHDOG_MS = 9000; // wall time: a tab that never paints
 
 type Phase = "idle" | "aiming" | "flying" | "delivered" | "missed";
 
 /* ─── Physics ─────────────────────────────────────────────────────────────── */
 
-type Body = { x: number; y: number; vx: number; vy: number };
-type Outcome = "air" | "delivered" | "floor";
+type Body = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  /** Degrees, clockwise. */
+  angle: number;
+  /** Degrees per second. */
+  spin: number;
+  /** Once it has dropped through the tray's mouth it is boxed in by the tray. */
+  inside: boolean;
+  /** Set on first touchdown, floor or tray; the preview stops there, the flight goes on. */
+  landed: boolean;
+};
+type Outcome = "air" | "delivered" | "rest";
 
-/** One step of the world. Mutates `b`; returns what happened. */
+function makeBody(v: { x: number; y: number }): Body {
+  return {
+    x: PAD.x,
+    y: PAD.y,
+    vx: v.x,
+    vy: v.y,
+    angle: 0,
+    spin: v.x * LAUNCH_TUMBLE,
+    inside: false,
+    landed: false,
+  };
+}
+
+/** Ease `angle` towards the nearest `every` degrees, the way a flat thing lies down. */
+function flatten(b: Body, every: number, rate: number, dt: number) {
+  const target = Math.round(b.angle / every) * every;
+  b.angle += (target - b.angle) * Math.min(1, rate * dt);
+  b.spin *= Math.max(0, 1 - 12 * dt);
+  return Math.abs(b.angle - target) < 0.5;
+}
+
+/**
+  One step of the world. Mutates `b`; returns what happened. Deterministic, so the
+  preview and the flight agree — including the bounces.
+*/
 function advance(b: Body, dt: number): Outcome {
   b.vy += GRAVITY * dt;
+  const drag = 1 - AIR_DRAG * dt;
+  b.vx *= drag;
+  b.vy *= drag;
   b.x += b.vx * dt;
   b.y += b.vy * dt;
+  b.angle += b.spin * dt;
+  b.spin *= 1 - 0.6 * dt;
+
+  if (b.inside) {
+    // Boxed in: the tray's inner walls, and the bed of letters it comes to rest on.
+    const left = TRAY.x0 + 4 + ENV_HW;
+    const right = TRAY.x1 - 4 - ENV_HW;
+    if (b.x < left) {
+      b.x = left;
+      b.vx = -b.vx * TRAY_BOUNCE;
+    } else if (b.x > right) {
+      b.x = right;
+      b.vx = -b.vx * TRAY_BOUNCE;
+    }
+    if (b.y > TRAY_REST.y) {
+      b.y = TRAY_REST.y;
+      if (b.vy > 90) {
+        b.vy = -b.vy * TRAY_BOUNCE;
+        b.vx *= 0.6;
+      } else {
+        // Sitting on the letters: the bed is a shallow dip, so it slides to the middle.
+        b.vy = 0;
+        b.vx += (TRAY_REST.x - b.x) * 40 * dt;
+        b.vx *= Math.max(0, 1 - 12 * dt);
+        const flat = flatten(b, 360, 16, dt);
+        if (flat && Math.abs(b.vx) < REST_SPEED * 2 && Math.abs(b.x - TRAY_REST.x) < 4) {
+          b.x = TRAY_REST.x;
+          b.vx = 0;
+          b.spin = 0;
+          return "delivered";
+        }
+      }
+    } else {
+      flatten(b, 360, 4, dt);
+    }
+    return "air";
+  }
 
   // Frame walls and ceiling.
   if (b.x < ENV_HW) {
     b.x = ENV_HW;
     b.vx = -b.vx * WALL_BOUNCE;
+    b.spin = -b.spin * 0.5;
   } else if (b.x > W - ENV_HW) {
     b.x = W - ENV_HW;
     b.vx = -b.vx * WALL_BOUNCE;
+    b.spin = -b.spin * 0.5;
   }
   if (b.y < ENV_HH) {
     b.y = ENV_HH;
     b.vy = -b.vy * WALL_BOUNCE;
   }
 
-  // The tray's outer left wall: arriving low from the left just bounces off it.
-  if (b.vx > 0 && b.x + ENV_HW > TRAY.x0 && b.x < TRAY.x0 && b.y > TRAY.top) {
-    b.x = TRAY.x0 - ENV_HW;
-    b.vx = -b.vx * WALL_BOUNCE * 0.6;
+  // Through the tray's mouth, and it is in.
+  if (b.x > TRAY.x0 + 4 && b.x < TRAY.x1 - 4 && b.y > TRAY.top - 2 && b.vy > 0) {
+    b.inside = true;
+    b.landed = true;
+    return "air";
   }
 
-  if (b.x > TRAY.x0 + 4 && b.x < TRAY.x1 - 4 && b.y > TRAY.top && b.vy > 0) return "delivered";
-  if (b.y > FLOOR - ENV_HH) return "floor";
+  // The tray's outer walls: arriving low from either side just bounces off. Judged by
+  // the centre, so a corner clipping the rim on the way in still counts as in.
+  if (b.y > TRAY.top) {
+    if (b.vx > 0 && b.x < TRAY.x0 && b.x + ENV_HW > TRAY.x0) {
+      b.x = TRAY.x0 - ENV_HW;
+      b.vx = -b.vx * WALL_BOUNCE * 0.6;
+      b.spin = -b.spin * 0.5;
+    } else if (b.vx < 0 && b.x > TRAY.x1 && b.x - ENV_HW < TRAY.x1) {
+      b.x = TRAY.x1 + ENV_HW;
+      b.vx = -b.vx * WALL_BOUNCE * 0.6;
+      b.spin = -b.spin * 0.5;
+    }
+  }
+
+  // The floor: bounce while it is coming down hard, then skid and lie flat.
+  if (b.y > FLOOR - ENV_HH) {
+    b.y = FLOOR - ENV_HH;
+    b.landed = true;
+    if (b.vy > BOUNCE_MIN_VY) {
+      b.vy = -b.vy * FLOOR_BOUNCE;
+      b.vx *= FLOOR_GRIP;
+      // The edge that hits drags: it tumbles on in the direction of travel.
+      b.spin = b.vx * 0.8 + b.spin * 0.3;
+    } else {
+      b.vy = 0;
+      b.vx *= Math.max(0, 1 - SLIDE_DRAG * dt);
+      const flat = flatten(b, 180, 14, dt);
+      if (flat && Math.abs(b.vx) < REST_SPEED) {
+        b.vx = 0;
+        b.spin = 0;
+        b.angle = Math.round(b.angle / 180) * 180;
+        return "rest";
+      }
+    }
+  }
   return "air";
 }
 
-/** Run a shot to its end instantly: the dotted path and where it lands. */
+/**
+  Run a shot instantly up to its first touchdown: the dotted path to that point, and
+  whether that point is the tray or the floor. What it does after — the bounces, the
+  skid — is left for the flight to show.
+*/
 function predict(v: { x: number; y: number }) {
-  const b: Body = { x: PAD.x, y: PAD.y, vx: v.x, vy: v.y };
+  const b = makeBody(v);
   const dots: string[] = [];
-  let outcome: Outcome = "air";
-  for (let i = 0; i < 360 && outcome === "air"; i++) {
-    outcome = advance(b, 1 / 60);
+  for (let i = 0; i < 600 && !b.landed; i++) {
+    if (advance(b, 1 / 60) !== "air") break;
     if (i % 3 === 0) dots.push(`${b.x.toFixed(1)},${b.y.toFixed(1)}`);
   }
+  const outcome: "delivered" | "floor" = b.inside ? "delivered" : "floor";
   return { outcome, x: b.x, y: b.y, missBy: missBy(b.x), dots: dots.join(" ") };
+}
+
+/*
+  A damped spring, stepped semi-implicitly so it stays stable at frame rates. Used for
+  the bands snapping back to the fork and the post wobbling on its base.
+*/
+type Spring = { x: number; v: number };
+function springStep(s: Spring, target: number, k: number, zeta: number, dt: number) {
+  const c = 2 * Math.sqrt(k) * zeta;
+  s.v += (-k * (s.x - target) - c * s.v) * dt;
+  s.x += s.v * dt;
+  return Math.abs(s.x - target) < 0.15 && Math.abs(s.v) < 2;
 }
 
 /** Signed gap between a landing x and the tray: negative is short, positive is long, 0 is in. */
@@ -138,6 +283,7 @@ export function ContactAirmail() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const envRef = useRef<SVGGElement>(null);
+  const postRef = useRef<SVGGElement>(null);
   const bandLeftRef = useRef<SVGLineElement>(null);
   const bandRightRef = useRef<SVGLineElement>(null);
   const previewRef = useRef<SVGPolylineElement>(null);
@@ -185,6 +331,14 @@ export function ContactAirmail() {
     bandLeftRef.current?.setAttribute("y2", y.toFixed(1));
     bandRightRef.current?.setAttribute("x2", (x + 4).toFixed(1));
     bandRightRef.current?.setAttribute("y2", y.toFixed(1));
+  }, []);
+
+  /* The post leans on its base; the bands are fixed to its prongs, so they lean with it. */
+  const drawPost = useCallback((degrees: number) => {
+    const transform = degrees === 0 ? "" : `rotate(${degrees.toFixed(2)} ${PAD.x} ${FLOOR})`;
+    postRef.current?.setAttribute("transform", transform);
+    bandLeftRef.current?.setAttribute("transform", transform);
+    bandRightRef.current?.setAttribute("transform", transform);
   }, []);
 
   const drawPreview = useCallback((v: { x: number; y: number } | null) => {
@@ -243,19 +397,74 @@ export function ContactAirmail() {
     cancelAnimationFrame(raf.current);
     placeEnvelope(PAD.x, PAD.y, 0);
     drawBands(PAD.x, PAD.y);
+    drawPost(0);
     trailRef.current?.setAttribute("points", "");
     setPhase("idle");
-  }, [drawBands, placeEnvelope]);
+  }, [drawBands, drawPost, placeEnvelope]);
+
+  /*
+    The elastic, after a release: the bands snap back towards the fork and overshoot a
+    few times, and the post rocks on its base. Both are springs stepped alongside
+    whatever else the frame is doing. Returns true once both are still.
+  */
+  const makeRecoil = useCallback(
+    (from: { x: number; y: number }, speed: number) => {
+      const band = { x: { x: from.x, v: 0 }, y: { x: from.y, v: 0 } };
+      const post: Spring = { x: 0, v: -Math.sign(from.x - PAD.x || 1) * speed * POST_KICK };
+      const point = { x: from.x, y: from.y };
+      let bandsStill = false;
+      let postStill = false;
+      const step = (dt: number) => {
+        if (!bandsStill) {
+          const sx = springStep(band.x, PAD.x, BAND_K, BAND_ZETA, dt);
+          const sy = springStep(band.y, PAD.y, BAND_K, BAND_ZETA, dt);
+          bandsStill = sx && sy;
+          point.x = bandsStill ? PAD.x : band.x.x;
+          point.y = bandsStill ? PAD.y : band.y.x;
+          drawBands(point.x, point.y);
+        }
+        if (!postStill) {
+          postStill = springStep(post, 0, POST_K, POST_ZETA, dt);
+          drawPost(postStill ? 0 : post.x);
+        }
+        return bandsStill && postStill;
+      };
+      return { step, point };
+    },
+    [drawBands, drawPost],
+  );
+
+  /* A pull too short to launch: the envelope rides the bands back to the fork. */
+  const springBack = useCallback(
+    (from: { x: number; y: number }) => {
+      cancelAnimationFrame(raf.current);
+      const recoil = makeRecoil(from, Math.hypot(from.x - PAD.x, from.y - PAD.y) * 2);
+      let last = performance.now();
+      const step = (now: number) => {
+        const dt = Math.min((now - last) / 1000, 0.032);
+        last = now;
+        const still = recoil.step(dt);
+        placeEnvelope(recoil.point.x, recoil.point.y, 0);
+        if (still) {
+          resetToPad();
+          return;
+        }
+        raf.current = requestAnimationFrame(step);
+      };
+      raf.current = requestAnimationFrame(step);
+    },
+    [makeRecoil, placeEnvelope, resetToPad],
+  );
 
   const launch = useCallback(
-    (v: { x: number; y: number }) => {
+    (v: { x: number; y: number }, from: { x: number; y: number }) => {
       cancelAnimationFrame(raf.current);
-      drawBands(PAD.x, PAD.y);
       drawPreview(null);
       setPhase("flying");
 
-      const b: Body = { x: PAD.x, y: PAD.y, vx: v.x, vy: v.y };
-      let angle = 0;
+      const b = makeBody(v);
+      const recoil = makeRecoil(from, Math.hypot(v.x, v.y));
+      let recoilDone = false;
       let last = performance.now();
       let elapsed = 0;
       const trail: string[] = [];
@@ -274,31 +483,43 @@ export function ContactAirmail() {
         later(resetToPad, RESET_AFTER_DELIVERY_MS);
       };
 
+      const settleElastic = () => {
+        if (recoilDone) return;
+        recoilDone = true;
+        drawBands(PAD.x, PAD.y);
+        drawPost(0);
+      };
+
       const step = (now: number) => {
         const dt = Math.min((now - last) / 1000, 0.032);
         last = now;
         elapsed += dt;
 
+        if (!recoilDone) recoilDone = recoil.step(dt);
+
         const outcome = advance(b, dt);
+        placeEnvelope(b.x, b.y, b.angle);
 
         if (outcome === "delivered") {
+          settleElastic();
           finishDelivery();
           return;
         }
-        if (outcome === "floor") {
-          placeEnvelope(b.x, FLOOR - ENV_HH, angle > 0 ? 8 : -8);
-          finishMiss(b.x);
+        if (outcome === "rest") {
+          settleElastic();
+          later(() => finishMiss(b.x), MISS_SETTLE_MS);
           return;
         }
 
-        angle = ((Math.atan2(b.vy, b.vx) * 180) / Math.PI) * 0.45;
-        placeEnvelope(b.x, b.y, angle);
-
-        trail.push(`${b.x.toFixed(1)},${b.y.toFixed(1)}`);
+        // The trail only follows it through the air; a skid leaves no vapour.
+        if (b.inside || b.y < FLOOR - ENV_HH - 0.5) {
+          trail.push(`${b.x.toFixed(1)},${b.y.toFixed(1)}`);
+        }
         if (trail.length > 26) trail.shift();
         trailRef.current?.setAttribute("points", trail.join(" "));
 
         if (elapsed > FLIGHT_SAFETY_S) {
+          settleElastic();
           finishMiss(b.x);
           return;
         }
@@ -315,11 +536,12 @@ export function ContactAirmail() {
       later(() => {
         if (phaseRef.current !== "flying") return;
         cancelAnimationFrame(raf.current);
+        settleElastic();
         if (expected.outcome === "delivered") finishDelivery();
         else finishMiss(expected.x);
       }, FLIGHT_WATCHDOG_MS);
     },
-    [drawBands, drawPreview, later, openThread, placeEnvelope, resetToPad],
+    [drawBands, drawPost, drawPreview, later, makeRecoil, openThread, placeEnvelope, resetToPad],
   );
 
   /* ─── Pointer handling on the envelope's hit area ────────────────────────── */
@@ -368,16 +590,17 @@ export function ContactAirmail() {
         // Never captured; nothing to release.
       }
 
-      const v = d.moved ? velocityFrom(pullPoint(toLocal(event))) : { x: 0, y: 0 };
-      // A tap, or a pull too short to leave the fork, just settles back.
+      const pull = d.moved ? pullPoint(toLocal(event)) : { x: PAD.x, y: PAD.y };
+      const v = d.moved ? velocityFrom(pull) : { x: 0, y: 0 };
+      // A tap, or a pull too short to leave the fork, rides the bands back.
       if (Math.hypot(v.x, v.y) < MIN_LAUNCH_SPEED) {
         drawPreview(null);
-        resetToPad();
+        springBack(pull);
         return;
       }
-      launch(v);
+      launch(v, pull);
     },
-    [drawPreview, launch, pullPoint, resetToPad, toLocal, velocityFrom],
+    [drawPreview, launch, pullPoint, springBack, toLocal, velocityFrom],
   );
 
   /* Keyboard users skip the game: Enter or Space on the frame opens the form. */
@@ -437,8 +660,8 @@ export function ContactAirmail() {
             <line x1="0" y1={FLOOR} x2={W} y2={FLOOR} className="stroke-line-bright" />
             <line x1="0" y1={FLOOR + 6} x2={W} y2={FLOOR + 6} className="stroke-line" strokeDasharray="2 6" />
 
-            {/* Slingshot: post, fork, prongs */}
-            <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+            {/* Slingshot: post, fork, prongs. Rocks on its base after a release. */}
+            <g ref={postRef} fill="none" strokeLinecap="round" strokeLinejoin="round">
               <line x1={PAD.x - 12} y1={FLOOR} x2={PAD.x + 12} y2={FLOOR} className="stroke-ink-dim" strokeWidth="3" />
               <line x1={PAD.x} y1={FLOOR} x2={PAD.x} y2={FORK_Y} className="stroke-ink-dim" strokeWidth="3" />
               <path
@@ -480,8 +703,9 @@ export function ContactAirmail() {
             <polyline ref={trailRef} fill="none" className="stroke-accent" strokeWidth="1.5" strokeLinecap="round" opacity="0.45" />
 
             {/* Inbox tray, back half: panel, the letters already in it. The front lip is drawn
-                after the envelope so a delivered letter drops in behind it. */}
-            <g>
+                after the envelope so a delivered letter drops in behind it. Both halves
+                jolt when a letter lands. */}
+            <g className={phase === "delivered" ? "tray-jolt" : ""}>
               {/* Ground shadow */}
               <ellipse cx={TRAY_CX} cy={FLOOR} rx={(TRAY.x1 - TRAY.x0) / 2 + 6} ry="3" className="fill-surface-2" />
               {/* Back panel */}
@@ -559,7 +783,7 @@ export function ContactAirmail() {
             </g>
 
             {/* Inbox tray, front lip: a low wall with a thumb notch, a label plate, and the new-mail badge. */}
-            <g>
+            <g className={phase === "delivered" ? "tray-jolt" : ""}>
               <path
                 d={`M${TRAY.x0} ${TRAY.bottom} V${TRAY_LIP + 3} q0 -3 3 -3 H${TRAY_CX - 11} a11 11 0 0 0 22 0 H${TRAY.x1 - 3} q3 0 3 3 V${TRAY.bottom} Z`}
                 strokeWidth="1.5"
