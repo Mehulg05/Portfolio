@@ -855,71 +855,6 @@ html[data-thread-open].lenis.lenis-stopped {
   }
 }
 
-/*
-  Experience blueprint (Blueprint.tsx). The drawing plots itself as it scrolls in: each
-  block rises in turn and the connector after it draws left to right, in one sequence
-  across both rows (`--i`). The wrapper opts out of the generic reveal so only the
-  parts move. Without js-motion the drawing is simply there.
-*/
-.js-motion .blueprint.reveal {
-  opacity: 1;
-  transform: none;
-}
-.bp-link {
-  background: linear-gradient(var(--color-accent), var(--color-accent)) center top / 1px 100%
-    no-repeat;
-  opacity: 0.7;
-}
-.js-motion .blueprint:not(.is-revealed) .bp-block {
-  opacity: 0;
-}
-.js-motion .blueprint:not(.is-revealed) .bp-link {
-  background-size: 1px 0%;
-}
-.js-motion .blueprint.is-revealed .bp-block {
-  animation: build-rise 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 70ms + 120ms);
-}
-.js-motion .blueprint.is-revealed .bp-link {
-  animation: bp-draw 0.2s linear both;
-  animation-delay: calc(var(--i, 0) * 70ms + 190ms);
-}
-@keyframes bp-draw {
-  from {
-    background-size: 1px 0%;
-  }
-}
-
-/*
-  Skill link (lib/skill-link.ts). A tag or chip with `data-lit` is the one under the
-  pointer somewhere else on the page, or the skill pinned in the map. Tags pulse once
-  so the eye finds them after the scroll; chips just brighten.
-*/
-.skill-tag {
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease,
-    background-color 0.2s ease;
-}
-.skill-tag[data-lit] {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background-color: color-mix(in srgb, var(--color-accent-deep) 45%, var(--color-surface));
-  animation: skill-pulse 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) 1;
-}
-.skill-chip[data-lit] {
-  border-color: var(--color-accent);
-  background-color: var(--color-surface);
-}
-@keyframes skill-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 60%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 10px transparent;
-  }
-}
-
 /* The hanging card can be grabbed on desktop; the cursor says so. */
 .idcard-grab {
   cursor: grab;
@@ -929,10 +864,3 @@ html[data-thread-open].lenis.lenis-stopped {
   cursor: grabbing;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .skill-tag,
-  .skill-tag[data-lit] {
-    transition: none;
-    animation: none;
-  }
-}
