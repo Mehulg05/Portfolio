@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/animation/Reveal";
-import { IdCard } from "@/components/sections/IdCard";
+import { IdCard, IdCardStatic } from "@/components/sections/IdCard";
 import { milestones } from "@/lib/content/milestones";
 import { observeScrollProgress } from "@/lib/motion/scroll-progress";
 import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
@@ -105,6 +105,11 @@ export function RevisionTrack() {
                 {milestone.story.map((paragraph) => (
                   <p key={paragraph.slice(0, 32)}>{paragraph}</p>
                 ))}
+              </div>
+
+              {/* Below lg there is no pinned column, so the card sits with its step. */}
+              <div className="mt-5 lg:hidden">
+                <IdCardStatic milestone={milestone} />
               </div>
             </div>
           </Reveal>

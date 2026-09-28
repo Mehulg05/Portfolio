@@ -3,6 +3,7 @@ import { Reveal } from "@/components/animation/Reveal";
 import { FlowDiagram } from "@/components/ui/FlowDiagram";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { sectionIndex } from "@/lib/content/sections";
 import { Tag } from "@/components/ui/Tag";
 import { projects } from "@/lib/content/projects";
 
@@ -13,7 +14,7 @@ export function CaseFiles() {
   return (
     <section id="projects" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
       <SectionHeader
-        index="05"
+        index={sectionIndex("projects")}
         label="Projects"
         title="Projects"
         caption="Live projects, with the problem, what I built and what I would change."

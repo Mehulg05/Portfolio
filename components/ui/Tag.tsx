@@ -1,9 +1,19 @@
 import type { Depth } from "@/lib/content/skills";
 import { depthLabels } from "@/lib/content/skills";
+import { skillKey } from "@/lib/skill-link";
 
+/*
+  A tag carries its skill key, so hovering it lights the same skill in the skills map
+  and a click on a chip there lights the tag back. Only string children can be keyed;
+  anything else renders as a plain tag.
+*/
 export function Tag({ children }: { children: React.ReactNode }) {
+  const key = typeof children === "string" ? skillKey(children) : undefined;
   return (
-    <span className="border border-line bg-surface px-2 py-1 font-mono text-[11px] tracking-[0.04em] text-ink-dim">
+    <span
+      data-skill={key}
+      className="skill-tag border border-line bg-surface px-2 py-1 font-mono text-[11px] tracking-[0.04em] text-ink-dim"
+    >
       {children}
     </span>
   );

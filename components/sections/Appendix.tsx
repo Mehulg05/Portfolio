@@ -1,5 +1,6 @@
 import { Reveal } from "@/components/animation/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { sectionIndex } from "@/lib/content/sections";
 import { certifications, courseraVerify, education } from "@/lib/content/profile";
 
 /*
@@ -22,7 +23,7 @@ function lastSpan(count: number) {
 export function Appendix() {
   return (
     <section id="education" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
-      <SectionHeader index="06" label="Education" title="Education and certifications" />
+      <SectionHeader index={sectionIndex("education")} label="Education" title="Education and certifications" />
 
       <Reveal className="mt-6">
         <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">

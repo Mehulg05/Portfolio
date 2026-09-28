@@ -3,20 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { profile } from "@/lib/content/profile";
-import { projects } from "@/lib/content/projects";
+import { sections } from "@/lib/content/sections";
 import { observeScrollProgress, refreshScrollProgress } from "@/lib/motion/scroll-progress";
-
-const sections = [
-  { id: "top", index: "01", label: "Top" },
-  { id: "experience", index: "02", label: "Experience" },
-  { id: "research", index: "03", label: "Research" },
-  // Only once a live project exists. The section renders nothing before then.
-  ...(projects.length > 0 ? [{ id: "projects", index: "03", label: "Projects" }] : []),
-  { id: "system-map", index: "04", label: "Skills" },
-  { id: "revision-history", index: "05", label: "Timeline" },
-  { id: "education", index: "07", label: "Education" },
-  { id: "contact", index: "08", label: "Contact" },
-];
 
 const navSections = sections.slice(1);
 
@@ -24,7 +12,7 @@ const navSections = sections.slice(1);
 const READ_LINE = 0.35;
 
 export function SiteHeader() {
-  const [activeId, setActiveId] = useState(sections[0].id);
+  const [activeId, setActiveId] = useState<string>(sections[0].id);
   const fillRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
@@ -109,10 +97,12 @@ export function SiteHeader() {
         {/*
           Below lg the same links sit in one row that scrolls sideways, so a phone gets a
           section menu too. Links are 44px tall there for touch; on desktop they shrink back.
+          The row fades out at its right edge while more links sit past it, so the cut-off
+          reads as "scroll for more" rather than the end of the menu.
         */}
         <nav
           aria-label="Sections"
-          className="-ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="nav-scroll -ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
         >
           <ul className="flex items-center gap-1 whitespace-nowrap lg:gap-5">
             {navSections.map((section) => {

@@ -3,12 +3,13 @@ import { ContactAirmail } from "@/components/sections/ContactAirmail";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { sectionIndex } from "@/lib/content/sections";
 import { profile } from "@/lib/content/profile";
 
 export function Contact() {
   return (
     <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-      <SectionHeader index="07" label="Contact" title="Let's build together" />
+      <SectionHeader index={sectionIndex("contact")} label="Contact" title="Let's build together" />
 
       {/*
         Two panels separated by a hairline, the same gap-px/bg-line construction the

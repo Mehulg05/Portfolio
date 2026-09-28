@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/animation/Reveal";
 import { FlowDiagram } from "@/components/ui/FlowDiagram";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { sectionIndex } from "@/lib/content/sections";
 import { Tag } from "@/components/ui/Tag";
 import { research } from "@/lib/content/research";
 
@@ -14,7 +15,7 @@ export function Research() {
       id="research"
       className="mx-auto flex max-w-6xl flex-col px-5 py-20 sm:px-8 sm:py-24 lg:min-h-[calc(100svh+2rem)] lg:pt-24 lg:pb-8"
     >
-      <SectionHeader index="03" label="Research" title="Research" />
+      <SectionHeader index={sectionIndex("research")} label="Research" title="Research" />
 
       <Reveal as="article" className="mt-6 flex flex-1 flex-col border border-line bg-surface">
         <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-line px-5 py-3 sm:px-7">

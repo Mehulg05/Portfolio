@@ -104,6 +104,30 @@ export function IdCard({ milestone, direction }: Props) {
   );
 }
 
+/*
+  The same card, still: no lanyard, no flip, no swing. Sits under each milestone below
+  lg, where the pinned column does not exist, so a phone sees every card too. The faces
+  are laid out at 208 x 312; the card is drawn at that size and scaled down as a whole,
+  so the type inside keeps its proportions.
+*/
+export function IdCardStatic({ milestone, scale = 0.75 }: { milestone: Milestone; scale?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{ width: 208 * scale, height: 312 * scale + 10 }}
+      className="relative"
+    >
+      <div className="absolute top-0 left-1/2 h-4 w-6 -translate-x-1/2 rounded-sm border border-line-bright bg-surface-2" />
+      <div
+        style={{ transform: `scale(${scale})` }}
+        className={`absolute top-[10px] left-0 h-[312px] w-[208px] origin-top-left overflow-hidden rounded-lg shadow-[0_14px_30px_-16px_rgba(0,0,0,0.8)] ${tones[milestone.card.tone]}`}
+      >
+        <CardFace milestone={milestone} />
+      </div>
+    </div>
+  );
+}
+
 export function CardFace({ milestone }: { milestone: Milestone }) {
   if (milestone.card.face) {
     return (

@@ -1,6 +1,8 @@
 import { Reveal } from "@/components/animation/Reveal";
+import { Blueprint } from "@/components/sections/Blueprint";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { sectionIndex } from "@/lib/content/sections";
 import { Tag } from "@/components/ui/Tag";
 import { roles } from "@/lib/content/experience";
 
@@ -8,7 +10,7 @@ export function Experience() {
   return (
     <section id="experience" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
       <SectionHeader
-        index="02"
+        index={sectionIndex("experience")}
         label="Experience"
         title="Experience"
         caption="Most recent first. Source code belongs to the employers and is not public."
@@ -54,8 +56,12 @@ export function Experience() {
                 </ul>
               ) : null}
 
+              {role.blueprint ? (
+                <Blueprint label={role.blueprint.label} rows={role.blueprint.rows} />
+              ) : null}
+
               {role.stack ? (
-                <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-6">
                   {role.stack.map((item) => (
                     <Tag key={item}>{item}</Tag>
                   ))}
