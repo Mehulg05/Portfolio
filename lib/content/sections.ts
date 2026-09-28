@@ -1,15 +1,11 @@
-import { projects } from "@/lib/content/projects";
-
 /*
   The one list of page sections, in page order. The header nav and every section
-  header take their number from here, so the two can never disagree. Projects only
-  counts once a live project exists; the section renders nothing before then.
+  header take their number from here, so the two can never disagree.
 */
 export const sections = [
   { id: "top", label: "Top" },
   { id: "experience", label: "Experience" },
   { id: "research", label: "Research" },
-  ...(projects.length > 0 ? [{ id: "projects", label: "Projects" }] : []),
   { id: "system-map", label: "Skills" },
   { id: "revision-history", label: "Timeline" },
   { id: "education", label: "Education" },

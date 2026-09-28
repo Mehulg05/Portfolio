@@ -782,6 +782,17 @@ export function ContactAirmail() {
               </g>
             </g>
 
+            {/* Postmark: stamped on the envelope once it is in the tray. */}
+            {phase === "delivered" && (
+              <g transform={`translate(${TRAY_REST.x + 4} ${TRAY_REST.y - 3})`}>
+                <g className="postmark stamp-now" filter="url(#ink-stamp)" fill="none" strokeLinecap="round">
+                  <circle r="9" strokeWidth="1.3" className="stroke-redline" />
+                  <circle r="6" strokeWidth="1" className="stroke-redline" />
+                  <path d="M12 -4 q3 -2 6 0 t6 0 M12 0 q3 -2 6 0 t6 0 M12 4 q3 -2 6 0 t6 0" strokeWidth="1.2" className="stroke-redline" />
+                </g>
+              </g>
+            )}
+
             {/* Inbox tray, front lip: a low wall with a thumb notch, a label plate, and the new-mail badge. */}
             <g className={phase === "delivered" ? "tray-jolt" : ""}>
               <path

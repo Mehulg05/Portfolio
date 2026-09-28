@@ -58,8 +58,8 @@ export const education = [
 
 /*
   Academic work, listed plainly while nothing is deployed. Descriptions restate the resume
-  and nothing more: no architecture, no trade-offs, no outcomes.
-  When a project goes live it moves to lib/content/projects.ts with its links.
+  and nothing more: no architecture, no trade-offs, no outcomes. There is no Projects
+  section on the site for now; it was removed until something is live.
 */
 export type AcademicProject = {
   name: string;
@@ -128,6 +128,12 @@ export const certifications: Certification[] = [
     issuer: "DeepLearning.AI",
     date: "Feb 2025",
     credentialId: "N26Q5C13SQSR",
+  },
+  {
+    name: "Supervised Machine Learning: Classification",
+    issuer: "IBM",
+    date: "Nov 2024",
+    credentialId: "F2FNMQCUEGDJ",
   },
 ];
 

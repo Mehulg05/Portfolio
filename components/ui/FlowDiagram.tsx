@@ -1,5 +1,6 @@
 import { Fragment } from "react";
-import type { FlowNode } from "@/lib/content/projects";
+
+export type FlowNode = { label: string; note: string };
 
 /*
   A schematic flow, laid out in CSS rather than fixed SVG coordinates so it can

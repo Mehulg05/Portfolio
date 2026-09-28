@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/animation/Reveal";
 import { FlowDiagram } from "@/components/ui/FlowDiagram";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Stamp } from "@/components/ui/Stamp";
 import { sectionIndex } from "@/lib/content/sections";
 import { Tag } from "@/components/ui/Tag";
 import { research } from "@/lib/content/research";
@@ -8,6 +9,9 @@ import { research } from "@/lib/content/research";
 /*
   From lg up the section is at least a full screen tall and the card stretches to fill it,
   so landing here from the nav shows Research alone, not the start of Skills below.
+
+  The card is the manuscript: two pages behind it, a staple in the corner, and the
+  status stamped on the header.
 */
 export function Research() {
   return (
@@ -17,15 +21,19 @@ export function Research() {
     >
       <SectionHeader index={sectionIndex("research")} label="Research" title="Research" />
 
-      <Reveal as="article" className="mt-6 flex flex-1 flex-col border border-line bg-surface">
-        <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-line px-5 py-3 sm:px-7">
-          <span className="border border-redline/45 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-redline">
-            {research.status}
-          </span>
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            {research.period}
-          </span>
-        </header>
+      <Reveal className="manuscript relative mt-6 flex flex-1 flex-col">
+        {/* The pages underneath, offset and a touch off square. */}
+        <div aria-hidden="true" className="manuscript-page manuscript-page-2 absolute inset-0" />
+        <div aria-hidden="true" className="manuscript-page manuscript-page-1 absolute inset-0" />
+
+        <article className="relative flex flex-1 flex-col border border-line bg-surface">
+          <span aria-hidden="true" className="manuscript-staple absolute top-[9px] left-[13px]" />
+          <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-line py-3 pr-5 pl-9 sm:pr-7 sm:pl-10">
+            <Stamp rotate={-3}>{research.status}</Stamp>
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              {research.period}
+            </span>
+          </header>
 
         <div className="grid flex-1 grid-cols-1 gap-px bg-line lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col bg-surface px-5 py-5 sm:px-7">
@@ -64,10 +72,11 @@ export function Research() {
           </div>
         </div>
 
-        <div className="border-t border-line px-5 py-4 sm:px-7">
-          <FlowDiagram nodes={[...research.pipeline]} label="How the pipeline fits together" />
-          <p className="mt-3 font-mono text-[11px] text-ink-faint">{research.access}</p>
-        </div>
+          <div className="border-t border-line px-5 py-4 sm:px-7">
+            <FlowDiagram nodes={[...research.pipeline]} label="How the pipeline fits together" />
+            <p className="mt-3 font-mono text-[11px] text-ink-faint">{research.access}</p>
+          </div>
+        </article>
       </Reveal>
     </section>
   );

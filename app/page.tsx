@@ -1,6 +1,5 @@
 import { SiteHeader } from "@/components/navigation/SiteHeader";
 import { Appendix } from "@/components/sections/Appendix";
-import { CaseFiles } from "@/components/sections/CaseFiles";
 import { Contact } from "@/components/sections/Contact";
 import { Experience } from "@/components/sections/Experience";
 import { Hero } from "@/components/sections/Hero";
@@ -15,11 +14,10 @@ export default function Page() {
     <>
       <SiteHeader />
       <main className="flex-1">
-        {/* Ordered by how much each section proves. Projects render only once one is live. */}
+        {/* Ordered by how much each section proves. */}
         <Hero />
         <Experience />
         <Research />
-        <CaseFiles />
         <SystemMap />
         <RevisionHistory />
         <Appendix />

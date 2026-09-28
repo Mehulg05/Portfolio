@@ -52,9 +52,6 @@ Phase 5 (done): polish, performance and accessibility pass.
 - Portrait at `public/mehul-portrait.png` (1086×1448 lossless source) is served through
   `next/image` at quality 90 — roughly 12 KB of AVIF at a 320 px display width.
 
-Remaining: real project screenshots. Drop a PNG in `/public` and set `screenshot` on the
-case file in `lib/content/projects.ts` — the render slot is already wired.
-
 ## Deploying (Vercel, free tier)
 
 The site is fully static (`○ Static` for every route) and has **no backend**, so nothing
@@ -69,6 +66,5 @@ for ~50s.
 ## Before deploying
 
 - Replace lines marked `[DRAFT]` in `lib/content/` with your own wording.
-- Fill `outcome` in `lib/content/projects.ts` where you have a real number.
 - Set `NEXT_PUBLIC_SITE_URL` to the deployed domain so metadata and JSON-LD resolve.
 - Add an OG image at `app/opengraph-image.png`.

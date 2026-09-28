@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/animation/SmoothScroll";
+import { InkDefs } from "@/components/ui/Ink";
 import { meta, profile } from "@/lib/content/profile";
 import { siteUrl } from "@/lib/site";
 
@@ -87,6 +88,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <SmoothScroll />
+        <InkDefs />
         <a
           href="#top"
           className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:bg-accent focus:px-4 focus:py-2 focus:font-mono focus:text-[12px] focus:text-ground"
