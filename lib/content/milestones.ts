@@ -6,6 +6,38 @@
   Shown as plain dots on a line, newest last. No version numbers (Mehul's call).
 */
 
+/*
+  The ID card hanging beside the timeline on desktop. Every field is a fact already
+  on the page (org, role, period); nothing on the card is decorative data — no ID
+  numbers, no real barcodes, no institutional logos, only text wordmarks.
+*/
+export type MilestoneCard = {
+  /** Card layout. Three Bennett steps share `student` so the swap reads as one card evolving. */
+  kind: "school" | "student" | "corporate" | "employee";
+  /** Text wordmark shown where a logo would be. */
+  org: string;
+  /** Logo in /public, used only where Mehul has supplied the real one. */
+  logo?: string;
+  /** Photo in /public for this card; falls back to the site cutout. */
+  photo?: string;
+  /** The real card as one finished 2:3 image in /public; replaces the drawn layout. */
+  face?: string;
+  /** Second line under the wordmark, e.g. the address. */
+  address?: string;
+  role?: string;
+  /** Labelled details at the foot of the card, e.g. Roll No. */
+  fields?: Array<{ label: string; value: string }>;
+  /** Small clip-on sleeve tag, e.g. "YEAR 2" or "RESEARCHER". */
+  tag?: string;
+  /** Vertical text on the card's side stripe, e.g. "HOSTELLER". */
+  side?: string;
+  /** Colour of the side stripe (student card); defaults to blue. */
+  stripe?: "blue" | "red";
+  /** Show the milestone period on the card (default true). */
+  period?: boolean;
+  tone: "white" | "paper" | "blue" | "steel" | "dark";
+};
+
 export type Milestone = {
   id: string;
   period: string;
@@ -14,12 +46,25 @@ export type Milestone = {
   context: string;
   /** The narrative for this step, one string per paragraph. */
   story: string[];
+  card: MilestoneCard;
   current?: boolean;
 };
 
 export const milestones: Milestone[] = [
   {
     id: "school",
+    card: {
+      kind: "school",
+      org: "Dyal Singh Public School",
+      logo: "/dyal-singh-logo.png",
+      photo: "/mehul-school.jpg",
+      address: "Dyal Singh Colony, Karnal, Haryana – 132001",
+      fields: [
+        { label: "Roll No.", value: "28" },
+        { label: "Blood Group", value: "B+" },
+      ],
+      tone: "white",
+    },
     period: "2008 – 2023",
     title: "School in Karnal",
     context: "Karnal, Haryana",
@@ -30,6 +75,19 @@ export const milestones: Milestone[] = [
   },
   {
     id: "bennett",
+    card: {
+      kind: "student",
+      org: "Bennett University",
+      logo: "/bennett-logo.png",
+      photo: "/mehul-bennett.jpg",
+      role: "B.Tech. Computer Science Engineering",
+      side: "Hosteller",
+      fields: [
+        { label: "Enrolment Number", value: "E23CSEU1423" },
+        { label: "Blood Group", value: "B+ve" },
+      ],
+      tone: "white",
+    },
     period: "2023 – 2024",
     title: "First year at Bennett University",
     context: "Greater Noida",
@@ -39,6 +97,19 @@ export const milestones: Milestone[] = [
   },
   {
     id: "foundations",
+    card: {
+      kind: "student",
+      org: "Bennett University",
+      logo: "/bennett-logo.png",
+      photo: "/mehul-bennett.jpg",
+      role: "B.Tech. Computer Science Engineering",
+      side: "Hosteller",
+      fields: [
+        { label: "Enrolment Number", value: "E23CSEU1423" },
+        { label: "Blood Group", value: "B+ve" },
+      ],
+      tone: "white",
+    },
     period: "2024 – May 2025",
     title: "Data structures, first project, first taste of AI",
     context: "Bennett University",
@@ -49,6 +120,14 @@ export const milestones: Milestone[] = [
   },
   {
     id: "rbh",
+    card: {
+      kind: "corporate",
+      org: "RBH Solutions",
+      logo: "/rbh-logo.png",
+      role: "Full Stack Intern",
+      period: false,
+      tone: "white",
+    },
     period: "Jun – Jul 2025",
     title: "Summer internship at RBH Solutions",
     context: "RBH Solutions · remote",
@@ -59,6 +138,20 @@ export const milestones: Milestone[] = [
   },
   {
     id: "uniryde-research",
+    card: {
+      kind: "student",
+      org: "Bennett University",
+      logo: "/bennett-logo.png",
+      photo: "/mehul-bennett.jpg",
+      role: "B.Tech. Computer Science Engineering",
+      side: "Day Scholar",
+      stripe: "red",
+      fields: [
+        { label: "Enrolment Number", value: "E23CSEU1423" },
+        { label: "Blood Group", value: "B+ve" },
+      ],
+      tone: "white",
+    },
     period: "Jul 2025 – Apr 2026",
     title: "UniRyde, and a research manuscript",
     context: "Bennett University",
@@ -69,6 +162,13 @@ export const milestones: Milestone[] = [
   },
   {
     id: "sahayogi",
+    card: {
+      kind: "employee",
+      org: "Sahayogi One",
+      role: "Developer Trainee",
+      face: "/sahayogi-one-id.jpg",
+      tone: "white",
+    },
     period: "Jun 2026 – present",
     title: "Developer Trainee at Sahayogi One",
     context: "Sahayogi One, Noida",

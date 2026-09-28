@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/animation/Reveal";
+import { IdCard } from "@/components/sections/IdCard";
 import { milestones } from "@/lib/content/milestones";
 import { observeScrollProgress } from "@/lib/motion/scroll-progress";
 import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
@@ -9,9 +10,12 @@ import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
 export function RevisionTrack() {
   const enabled = useMotionEnabled();
   const containerRef = useRef<HTMLDivElement>(null);
-  const fillRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<Array<HTMLDivElement | null>>([]);
-  const [active, setActive] = useState(0);
+  // Which step is being read, and whether the visitor scrolled down or up into it.
+  const [active, setActive] = useState<{ index: number; direction: 1 | -1 }>({
+    index: 0,
+    direction: 1,
+  });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -21,59 +25,36 @@ export function RevisionTrack() {
 
     return observeScrollProgress(
       container,
-      (progress) => {
-        if (fillRef.current) {
-          fillRef.current.style.transform = `scaleY(${progress})`;
-        }
-
+      () => {
         // The entry whose top most recently crossed the same reading line.
         const line = window.innerHeight * readLine;
         let next = 0;
         itemsRef.current.forEach((element, index) => {
           if (element && element.getBoundingClientRect().top <= line) next = index;
         });
-        setActive((previous) => (previous === next ? previous : next));
+        setActive((previous) =>
+          previous.index === next
+            ? previous
+            : { index: next, direction: next > previous.index ? 1 : -1 },
+        );
       },
       { readLine },
     );
   }, [enabled]);
 
-  const current = milestones[active];
+  const current = milestones[active.index];
 
   return (
-    <div ref={containerRef} className="mt-14 lg:grid lg:grid-cols-[240px_1fr] lg:gap-14">
+    <div ref={containerRef} className="mt-14 lg:grid lg:grid-cols-[1fr_240px] lg:gap-14">
       {/*
-        Pinned readout, desktop and motion only: when and where the step you have
-        scrolled to happened, and a line of dots showing how far along you are.
+        Pinned column on the right, desktop and motion only: the ID card for the step
+        you have scrolled to, hanging from the top of the viewport. Rendered first so the timeline stays the
+        section's primary content in source order; `order` moves it visually.
       */}
       {enabled ? (
-        <div>
-          <div className="sticky top-28">
-            <p className="font-display text-3xl leading-tight tracking-tight text-accent tabular-nums">
-              {current.period}
-            </p>
-            <p className="mt-2 text-sm text-ink">{current.title}</p>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-              {current.context}
-            </p>
-
-            <div className="relative mt-7 h-44 w-px bg-line">
-              <div
-                ref={fillRef}
-                className="absolute inset-0 origin-top bg-accent"
-                style={{ transform: "scaleY(0)" }}
-              />
-              {milestones.map((milestone, index) => (
-                <span
-                  key={milestone.id}
-                  aria-hidden="true"
-                  className={`absolute -left-[4px] h-2 w-2 -translate-y-1/2 rounded-full ${
-                    index <= active ? "bg-accent" : "bg-line-bright"
-                  }`}
-                  style={{ top: `${(index / (milestones.length - 1)) * 100}%` }}
-                />
-              ))}
-            </div>
+        <div className="lg:order-2 lg:justify-self-end">
+          <div className="sticky top-28 w-[208px]">
+            <IdCard milestone={current} direction={active.direction} />
           </div>
         </div>
       ) : null}
@@ -101,7 +82,7 @@ export function RevisionTrack() {
               className={
                 enabled
                   ? `transition-opacity duration-500 ${
-                      index === active ? "opacity-100" : "opacity-45"
+                      index === active.index ? "opacity-100" : "opacity-45"
                     }`
                   : undefined
               }

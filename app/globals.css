@@ -95,6 +95,43 @@ html.lenis-smooth {
     transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+/*
+  Timeline ID card. Two half-turns: `out` takes the card edge-on, the face swaps on
+  animationend (JS), `in` brings the new face round. Two cards are never visible.
+*/
+@keyframes idcard-out-forward {
+  to {
+    transform: rotateY(90deg);
+  }
+}
+@keyframes idcard-in-forward {
+  from {
+    transform: rotateY(-90deg);
+  }
+}
+@keyframes idcard-out-back {
+  to {
+    transform: rotateY(-90deg);
+  }
+}
+@keyframes idcard-in-back {
+  from {
+    transform: rotateY(90deg);
+  }
+}
+.idcard-out-forward {
+  animation: idcard-out-forward 0.23s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.idcard-in-forward {
+  animation: idcard-in-forward 0.23s cubic-bezier(0, 0, 0.2, 1) both;
+}
+.idcard-out-back {
+  animation: idcard-out-back 0.23s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.idcard-in-back {
+  animation: idcard-in-back 0.23s cubic-bezier(0, 0, 0.2, 1) both;
+}
+
 /* Hero load sequence — pure CSS, no JS dependency. */
 @keyframes build-rise {
   from {
