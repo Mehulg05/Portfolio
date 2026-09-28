@@ -197,7 +197,7 @@ export function SheetSketch() {
       const cosine = Math.cos(angle);
       const flip = cosine < -1e-6 || (Math.abs(cosine) <= 1e-6 && Math.sin(angle) > 0);
       const upright = flip ? angle + Math.PI : angle;
-      const label = `${(length / GRID).toFixed(1)} units`;
+      const label = `${(length / GRID).toFixed(1)} unit`;
       context.save();
       context.globalAlpha = alpha;
       context.translate((a.x + b.x) / 2, (a.y + b.y) / 2);
