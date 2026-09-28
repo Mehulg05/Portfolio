@@ -44,7 +44,6 @@ export const pipeline: Stage[] = [
     skills: [
       { name: "NestJS", depth: "shipped", note: "Payroll module APIs at Sahayogi One, in production." },
       { name: "Role-based access control", depth: "shipped", note: "Three access levels in the payroll module. Role-based screens at RBH." },
-      { name: "Design docs (HLD, LLD)", depth: "shipped", note: "Written and approved before building the payroll module." },
       { name: "WhatsApp Business APIs", depth: "learning", note: "Integrating them at work since Sep 2026. Not released yet." },
       { name: "Auth and verification", depth: "academic", note: "Student verification and sign-in in UniRyde." },
       { name: "Google Maps API", depth: "academic", note: "Routes and matching in UniRyde." },
