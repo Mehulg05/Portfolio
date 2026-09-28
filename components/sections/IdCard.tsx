@@ -1,16 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Milestone } from "@/lib/content/milestones";
-import { useScrollSwing } from "@/lib/motion/use-scroll-swing";
+import { CLIP_DEPTH, STRAP_WIDTH, useLanyard } from "@/lib/motion/use-lanyard";
 
 /*
   The ID card hanging beside the timeline. One lanyard from the top of the viewport,
-  one card. When the milestone changes the card flips edge-on, swaps face, and flips
-  back — so two cards are never visible at once. Scrolling gives it a small swing.
+  one card. When the milestone changes the holder flips edge-on with the card in it,
+  the face swaps, and it flips back — so two cards are never visible at once. The
+  lanyard is a simulated strap
+  (see use-lanyard): scrolling jolts the card, and it can be picked up and pulled.
   Desktop and motion only (the parent gates on useMotionEnabled).
+
+  The look: a woven strap with stitched edges and the name printed along it, ending
+  in a metal crimp and a swivel ring hooked through the slot of a clear vinyl badge
+  holder, with the PVC card sitting inside it.
 */
+
+const CARD_W = 208;
+const CARD_H = 312;
+/** The holder: a clear pouch a little wider than the card, with a tab above it for the slot. */
+export const HOLDER_SIDE = 5;
+const HOLDER_TOP = 18;
+const HOLDER_BOTTOM = 6;
+export const HOLDER_W = CARD_W + HOLDER_SIDE * 2;
+export const HOLDER_H = CARD_H + HOLDER_TOP + HOLDER_BOTTOM;
+/** The sticky column's top offset: the strap runs from the viewport top to the hook. */
+const LANYARD = 112;
+/** Printed along the strap; long enough to cover it at any stretch. */
+const STRAP_TEXT = "MEHUL GUPTA · ".repeat(6);
 
 type Phase = "idle" | "out" | "in";
 
@@ -32,12 +51,21 @@ type Props = {
 };
 
 export function IdCard({ milestone, direction }: Props) {
-  const pendulumRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const strapRef = useRef<SVGPathElement>(null);
+  const edgesRef = useRef<SVGPathElement>(null);
+  const hardwareRef = useRef<SVGGElement>(null);
   const [shown, setShown] = useState(milestone);
   const [phase, setPhase] = useState<Phase>("idle");
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  useScrollSwing(pendulumRef);
+  useLanyard(
+    frameRef,
+    bodyRef,
+    { strap: strapRef, edges: edgesRef, hardware: hardwareRef },
+    { length: LANYARD, width: HOLDER_W, height: HOLDER_H },
+  );
 
   // A new step arrived: start turning the card away. If the step changes again
   // mid-turn we simply retarget; the animationend handler reads the latest prop.
@@ -73,34 +101,163 @@ export function IdCard({ milestone, direction }: Props) {
 
   const { card } = shown;
 
+  const straight = `M${HOLDER_W / 2} ${-LANYARD} L${HOLDER_W / 2} 0`;
+
   return (
     <div
-      ref={pendulumRef}
-      className="relative w-[208px] origin-[50%_-7rem] will-change-transform"
+      ref={frameRef}
+      className="relative"
+      style={{ width: HOLDER_W, height: HOLDER_H, perspective: "1200px" }}
     >
-      {/* Lanyard: runs from the top of the viewport (sticky top is 7rem) to the clip. */}
-      <div
+      {/*
+        The strap. Drawn in the frame's coordinate space (overflow visible, so it can
+        reach above the card to the viewport top); painted by the sim every frame. It
+        sits behind the holder so a slack loop hides under it.
+      */}
+      <svg
         aria-hidden="true"
-        className="absolute -top-28 left-1/2 h-28 w-[3px] -translate-x-1/2 bg-gradient-to-b from-line-bright to-accent-deep"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -top-2 left-1/2 h-4 w-6 -translate-x-1/2 rounded-sm border border-line-bright bg-surface-2"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute top-1 left-1/2 h-1.5 w-8 -translate-x-1/2 rounded-full bg-ground/70"
-      />
-
-      <div style={{ perspective: "900px" }}>
-        <div
-          onAnimationEnd={advance}
-          className={`relative h-[312px] overflow-hidden rounded-lg shadow-[0_18px_40px_-18px_rgba(0,0,0,0.8)] ${flipClass} ${tones[card.tone]}`}
+        width={HOLDER_W}
+        height={HOLDER_H}
+        className="pointer-events-none absolute top-0 left-0 overflow-visible"
+      >
+        <defs>
+          <pattern
+            id="idcard-weave"
+            width="4"
+            height="4"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width="4" height="4" fill="#3a5490" />
+            <rect width="2" height="4" fill="#2c4374" />
+          </pattern>
+        </defs>
+        {/* Woven strap: shadowed underside, the weave, then stitching and the print. */}
+        <path
+          ref={strapRef}
+          id="idcard-strap"
+          d={straight}
+          fill="none"
+          stroke="url(#idcard-weave)"
+          strokeWidth={STRAP_WIDTH}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+          style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.6))" }}
+        />
+        <path
+          ref={edgesRef}
+          d={`${straight} ${straight}`}
+          fill="none"
+          stroke="rgba(255,255,255,0.38)"
+          strokeWidth={0.8}
+          strokeDasharray="2.5 1.8"
+          strokeLinejoin="round"
+        />
+        <text
+          fill="rgba(255,255,255,0.7)"
+          fontSize="5.5"
+          fontFamily="var(--font-mono, ui-monospace, monospace)"
+          fontWeight="600"
+          letterSpacing="0.9"
+          dominantBaseline="central"
+          textAnchor="start"
         >
-          <CardFace milestone={shown} />
+          <textPath href="#idcard-strap" startOffset="0">
+            {STRAP_TEXT}
+          </textPath>
+        </text>
+      </svg>
+
+      {/* The body the sim moves: the holder with the card in it, rotating about its centre. */}
+      <div
+        ref={bodyRef}
+        className="relative origin-center will-change-transform"
+        style={{ width: HOLDER_W, height: HOLDER_H }}
+      >
+        {/* The flip turns the whole pouch, card inside, about its vertical centre line. */}
+        <div className="h-full w-full" style={{ perspective: "900px" }}>
+          <div onAnimationEnd={advance} className={`relative h-full w-full ${flipClass}`}>
+            <Holder>
+              <div
+                className={`idcard-plastic relative h-[312px] w-[208px] overflow-hidden rounded-lg ${tones[card.tone]}`}
+              >
+                <CardFace milestone={shown} />
+              </div>
+            </Holder>
+          </div>
         </div>
       </div>
+
+      {/* Crimp and swivel ring, above the holder so the ring shows over the slot. */}
+      <svg
+        aria-hidden="true"
+        width={HOLDER_W}
+        height={HOLDER_H}
+        className="pointer-events-none absolute top-0 left-0 overflow-visible"
+      >
+        <g ref={hardwareRef} transform={`translate(${HOLDER_W / 2} ${CLIP_DEPTH})`}>
+          <Hardware />
+        </g>
+      </svg>
     </div>
+  );
+}
+
+/*
+  A clear vinyl badge holder, sized to HOLDER_W x HOLDER_H, with the card placed inside
+  it. The back is the pouch itself (a faint tint, a bright edge, a welded seam a few px
+  in); the front is the reflection on the plastic, which the sim slides with --sheen.
+  The slot is punched through the tab above the card.
+*/
+function Holder({ children }: { children: ReactNode }) {
+  return (
+    <div className="absolute inset-0">
+      <div aria-hidden="true" className="idcard-holder-back absolute inset-0 rounded-[10px]" />
+      <div className="absolute" style={{ top: HOLDER_TOP, left: HOLDER_SIDE }}>
+        {children}
+      </div>
+      <div aria-hidden="true" className="idcard-holder-front pointer-events-none absolute inset-0 rounded-[10px]" />
+      <Slot />
+    </div>
+  );
+}
+
+/*
+  Metal fittings at the strap's end, drawn around the point where the ring meets the
+  card's slot, local +y running along the strap towards the card: a crimp that the strap
+  disappears into, then a swivel ring through the slot. Brushed steel from a gradient.
+*/
+function Hardware() {
+  return (
+    <>
+      <defs>
+        <linearGradient id="idcard-steel" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#6b7480" />
+          <stop offset="0.25" stopColor="#e6eaef" />
+          <stop offset="0.5" stopColor="#9aa3ae" />
+          <stop offset="0.75" stopColor="#f2f4f7" />
+          <stop offset="1" stopColor="#5f6874" />
+        </linearGradient>
+      </defs>
+      {/* Crimp */}
+      <rect x={-8.5} y={-20} width={17} height={11} rx={1.5} fill="url(#idcard-steel)" stroke="rgba(0,0,0,0.55)" strokeWidth={0.6} />
+      <rect x={-7} y={-17} width={14} height={0.9} fill="rgba(0,0,0,0.35)" />
+      <rect x={-7} y={-13.5} width={14} height={0.9} fill="rgba(0,0,0,0.35)" />
+      {/* Ring, through the slot */}
+      <ellipse cx={0} cy={-3} rx={6} ry={7.5} fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth={3.8} />
+      <ellipse cx={0} cy={-3} rx={6} ry={7.5} fill="none" stroke="url(#idcard-steel)" strokeWidth={2.5} />
+    </>
+  );
+}
+
+/** The slot punched through the holder's tab; the page shows through it. */
+function Slot() {
+  return (
+    <div
+      aria-hidden="true"
+      className="idcard-slot absolute left-1/2 h-[5px] w-[26px] -translate-x-1/2 rounded-full bg-ground"
+      style={{ top: CLIP_DEPTH - 2.5 }}
+    />
   );
 }
 
@@ -114,15 +271,26 @@ export function IdCardStatic({ milestone, scale = 0.75 }: { milestone: Milestone
   return (
     <div
       aria-hidden="true"
-      style={{ width: 208 * scale, height: 312 * scale + 10 }}
+      style={{ width: HOLDER_W * scale, height: (HOLDER_H + 14) * scale }}
       className="relative"
     >
-      <div className="absolute top-0 left-1/2 h-4 w-6 -translate-x-1/2 rounded-sm border border-line-bright bg-surface-2" />
       <div
-        style={{ transform: `scale(${scale})` }}
-        className={`absolute top-[10px] left-0 h-[312px] w-[208px] origin-top-left overflow-hidden rounded-lg shadow-[0_14px_30px_-16px_rgba(0,0,0,0.8)] ${tones[milestone.card.tone]}`}
+        style={{ transform: `scale(${scale})`, width: HOLDER_W, height: HOLDER_H + 14 }}
+        className="absolute top-0 left-0 origin-top-left"
       >
-        <CardFace milestone={milestone} />
+        {/* A stub of strap, its crimp and the ring, so the card reads the same as the hanging one. */}
+        <div className="idcard-strap-stub absolute top-0 left-1/2 h-[6px] w-[12px] -translate-x-1/2" />
+        <div className="idcard-crimp absolute top-[4px] left-1/2 h-[9px] w-[15px] -translate-x-1/2 rounded-[1.5px]" />
+        <div className="idcard-ring absolute top-[9px] left-1/2 h-[16px] w-[12px] -translate-x-1/2 rounded-full" />
+        <div className="absolute top-[14px] left-0" style={{ width: HOLDER_W, height: HOLDER_H }}>
+          <Holder>
+            <div
+              className={`idcard-plastic relative h-[312px] w-[208px] overflow-hidden rounded-lg ${tones[milestone.card.tone]}`}
+            >
+              <CardFace milestone={milestone} />
+            </div>
+          </Holder>
+        </div>
       </div>
     </div>
   );

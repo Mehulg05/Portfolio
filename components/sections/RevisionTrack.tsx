@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/animation/Reveal";
-import { IdCard, IdCardStatic } from "@/components/sections/IdCard";
+import { HOLDER_W, IdCard, IdCardStatic } from "@/components/sections/IdCard";
 import { milestones } from "@/lib/content/milestones";
 import { observeScrollProgress } from "@/lib/motion/scroll-progress";
 import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
@@ -53,7 +53,7 @@ export function RevisionTrack() {
       */}
       {enabled ? (
         <div className="lg:order-2 lg:justify-self-end">
-          <div className="sticky top-28 w-[208px]">
+          <div className="sticky top-28" style={{ width: HOLDER_W }}>
             <IdCard milestone={current} direction={active.direction} />
           </div>
         </div>
