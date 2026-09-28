@@ -1,5 +1,6 @@
 import { Fragment, type CSSProperties } from "react";
 import { HeroPortrait } from "@/components/sections/HeroPortrait";
+import { SheetSketch } from "@/components/sections/SheetSketch";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { profile } from "@/lib/content/profile";
 
@@ -23,6 +24,7 @@ export function Hero() {
       <div className="sheet-grid pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="sheet-grid-bright" aria-hidden="true" />
       <div className="hero-torch" aria-hidden="true" />
+      <SheetSketch />
 
       <div className="relative mx-auto max-w-6xl px-5 pt-8 pb-14 sm:px-8 sm:pt-16 sm:pb-20">
 
