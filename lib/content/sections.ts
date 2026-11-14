@@ -1,6 +1,6 @@
 /*
-  The one list of page sections, in page order. The header nav and every section
-  header take their number from here, so the two can never disagree.
+  The one list of page sections, in page order. The header nav reads it, so adding a
+  section here is what puts it in the nav.
 */
 export const sections = [
   { id: "top", label: "Top" },
@@ -11,11 +11,3 @@ export const sections = [
   { id: "education", label: "Education" },
   { id: "contact", label: "Contact" },
 ] as const;
-
-export type SectionId = (typeof sections)[number]["id"];
-
-/** Two-digit position of a section, "01" for the top. */
-export function sectionIndex(id: SectionId) {
-  const position = sections.findIndex((section) => section.id === id) + 1;
-  return String(position).padStart(2, "0");
-}
