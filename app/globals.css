@@ -23,6 +23,7 @@
   --color-accent-deep: #2b3f6e;
   --color-redline: #ff9a5c;
 
+
   --font-display: var(--font-plex-cond), "IBM Plex Sans Condensed", system-ui, sans-serif;
   --font-sans: var(--font-plex), "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
@@ -1071,4 +1072,186 @@ html[data-thread-open].lenis.lenis-stopped {
 }
 .hero-section.is-lit .sketch-hint {
   opacity: 1;
+}
+
+/*
+  Client Work: the Alpha Academy case study.
+
+  Everything that moves is progressive enhancement under the `js-motion` gate. Without it
+  (no JS, reduced motion) every frame, cursor, trace line and card renders in its final
+  state. With it, each walkthrough step is a small CSS timeline keyed on the step: the
+  still frame cross-fades in, the cursor glides to its target and clicks, the trace types
+  out line by line, and the step rail fills. Video steps follow the recording's clock.
+*/
+
+/* Live status: a slow ping behind the dot. */
+.js-motion .live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  animation: live-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes live-ping {
+  75%,
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* The frame lifts a little under the pointer. */
+.walk-frame {
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .walk-frame:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line-bright));
+    box-shadow: 0 24px 60px -30px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+}
+
+/* Frames: stacked, only the active one shown. */
+.walk-shot {
+  opacity: 0;
+  visibility: hidden;
+}
+.walk-shot[data-active] {
+  opacity: 1;
+  visibility: visible;
+}
+.js-motion .walk-shot {
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    visibility 0s linear 0.55s;
+}
+.js-motion .walk-shot[data-active] {
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    visibility 0s;
+}
+
+/* Cursor: the tip sits on the target point. */
+.walk-cursor {
+  translate: -2px -2px;
+}
+.js-motion .walk-cursor {
+  transition:
+    left 0.95s cubic-bezier(0.45, 0, 0.2, 1) 0.35s,
+    top 0.95s cubic-bezier(0.45, 0, 0.2, 1) 0.35s;
+}
+.walk-click {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.js-motion .walk-click {
+  animation: walk-click 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) 1.35s both;
+}
+@keyframes walk-click {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+/* Trace: heading fades in, then the log types out a line at a time. */
+.js-motion .walk-in {
+  animation: walk-rise 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.js-motion .walk-line {
+  animation: walk-line 0.35s steps(1, end) both;
+  animation-delay: calc(0.5s + var(--i, 0) * 0.42s);
+}
+.js-motion .walk-line > span:last-child {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  animation: walk-type 0.38s steps(24, end) both;
+  animation-delay: calc(0.5s + var(--i, 0) * 0.42s);
+}
+.js-motion .walk-live {
+  animation: walk-blink 1.6s ease-in-out infinite;
+}
+@keyframes walk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes walk-line {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes walk-type {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes walk-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Step rail: the active segment is the tour's clock. */
+.walk-progress {
+  transform-origin: left;
+  animation: walk-progress var(--step, 6s) linear both;
+}
+.walk-progress[data-paused] {
+  animation-play-state: paused;
+}
+@keyframes walk-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Deploy lines follow their card in. */
+.js-motion .reveal:not(.is-revealed) .eng-line {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.js-motion .reveal.is-revealed .eng-line {
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition-delay: calc(0.25s + var(--i, 0) * 80ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot::after,
+  .walk-click,
+  .walk-in,
+  .walk-line,
+  .walk-line > span:last-child,
+  .walk-live {
+    animation: none !important;
+  }
+  .walk-line > span:last-child {
+    clip-path: none !important;
+  }
+  .walk-cursor,
+  .walk-shot {
+    transition: none !important;
+  }
+  .eng-line {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

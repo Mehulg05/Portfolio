@@ -1,5 +1,6 @@
 import { SiteHeader } from "@/components/navigation/SiteHeader";
 import { Appendix } from "@/components/sections/Appendix";
+import { ClientWork } from "@/components/sections/ClientWork";
 import { Contact } from "@/components/sections/Contact";
 import { Experience } from "@/components/sections/Experience";
 import { Hero } from "@/components/sections/Hero";
@@ -17,6 +18,7 @@ export default function Page() {
         {/* Ordered by how much each section proves. */}
         <Hero />
         <Experience />
+        <ClientWork />
         <Research />
         <SystemMap />
         <RevisionHistory />
