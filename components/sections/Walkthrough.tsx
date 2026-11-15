@@ -246,7 +246,7 @@ export function Walkthrough() {
               <span className="h-2 w-2 rounded-full bg-line-bright" />
             </span>
             <span className="min-w-0 flex-1 truncate border border-line bg-ground px-2.5 py-1 font-mono text-[10px] text-ink-faint">
-              {flow.kind === "images" && "image" in step && step.image.endsWith("alpha-academy-home.jpg")
+              {flow.id === "website"
                 ? "alphaacademykarnal.in · live"
                 : `staging · /portal · ${flow.actor}`}
             </span>
