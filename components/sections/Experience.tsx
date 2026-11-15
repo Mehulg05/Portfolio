@@ -8,7 +8,6 @@ export function Experience() {
   return (
     <section id="experience" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
       <SectionHeader
-        index="02"
         label="Experience"
         title="Experience"
         caption="Most recent first. Source code belongs to the employers and is not public."

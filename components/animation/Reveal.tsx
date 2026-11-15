@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useRef } from "react";
+import { createElement } from "react";
 
 // One observer for the whole page rather than one per element.
 let sharedObserver: IntersectionObserver | null = null;
@@ -30,25 +30,24 @@ type Props = {
   delay?: number;
 };
 
+// A callback ref with cleanup (React 19) instead of useRef + useEffect: the element is
+// observed when it mounts and unobserved when it unmounts.
+function observeReveal(node: HTMLElement | null) {
+  if (!node) return;
+
+  // No js-motion class means reduced motion or no JS gate — content is already visible.
+  if (!document.documentElement.classList.contains("js-motion")) return;
+
+  const observer = getObserver();
+  observer?.observe(node);
+  return () => observer?.unobserve(node);
+}
+
 export function Reveal({ children, as = "div", className, delay = 0 }: Props) {
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    // No js-motion class means reduced motion or no JS gate — content is already visible.
-    if (!document.documentElement.classList.contains("js-motion")) return;
-
-    const observer = getObserver();
-    observer?.observe(node);
-    return () => observer?.unobserve(node);
-  }, []);
-
   return createElement(
     as,
     {
-      ref,
+      ref: observeReveal,
       className: className ? `reveal ${className}` : "reveal",
       style: delay ? { transitionDelay: `${delay}ms` } : undefined,
     },

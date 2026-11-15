@@ -2,7 +2,6 @@ import { Reveal } from "@/components/animation/Reveal";
 import { FlowDiagram } from "@/components/ui/FlowDiagram";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stamp } from "@/components/ui/Stamp";
-import { sectionIndex } from "@/lib/content/sections";
 import { Tag } from "@/components/ui/Tag";
 import { research } from "@/lib/content/research";
 
@@ -19,7 +18,7 @@ export function Research() {
       id="research"
       className="mx-auto flex max-w-6xl flex-col px-5 py-20 sm:px-8 sm:py-24 lg:min-h-[calc(100svh+2rem)] lg:pt-24 lg:pb-8"
     >
-      <SectionHeader index={sectionIndex("research")} label="Research" title="Research" />
+      <SectionHeader label="Research" title="Research" />
 
       <Reveal className="manuscript relative mt-6 flex flex-1 flex-col">
         {/* The pages underneath, offset and a touch off square. */}
