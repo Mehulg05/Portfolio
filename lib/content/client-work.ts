@@ -253,10 +253,10 @@ export const walkthrough: WalkFlow[] = [
     label: "Student",
     actor: "Signed in as a Class 12 student",
     summary: "Sees the result the teacher just published, attendance, homework with a PDF, lectures and report cards, all through one rule: a student's requests resolve only to themselves.",
-    frame: { width: 1600, height: 912 },
+    frame: { width: 1600, height: 752 },
     video: {
       ...v("walk-student"),
-      seconds: 54.63,
+      seconds: 44.6,
       description:
         "Screen recording: a student signs in, checks the dashboard and score trend, finds the new quiz result, opens the attendance calendar, views a homework PDF inside the portal, plays a lecture and reads the teacher's remark.",
     },
@@ -273,7 +273,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 8.6,
+        at: 6.19,
         title: "One dashboard, computed per student",
         detail: "Next class, attendance, average against the batch, rank and the board-exam countdown, all derived from the rows teachers wrote.",
         tech: ["GET /api/dashboard", "resolveStudentId"],
@@ -284,7 +284,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 16.48,
+        at: 13.75,
         title: "The quiz published minutes ago",
         detail: "The score trend and the test list already include the Ray Optics quiz the teacher just published, with rank and the batch average.",
         tech: ["GET /api/me/tests", "published only"],
@@ -295,7 +295,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 26.86,
+        at: 23.44,
         title: "Attendance, class by class",
         detail: "Each calendar cell is a class session generated from the timetable and then marked; a student sees only their own row of every register.",
         tech: ["GET /api/me/attendance"],
@@ -305,7 +305,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 30.88,
+        at: 27.91,
         title: "Homework, with the file in the portal",
         detail: "Homework is one row per batch. The PDF streams from the portal's own origin and pdf.js draws it page by page, because many phone browsers won't show a PDF inside a page.",
         tech: ["?view=1", "CSP sandbox", "pdf.js"],
@@ -317,7 +317,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 43.43,
+        at: 38.64,
         title: "Lectures, filed by chapter",
         detail: "Lectures are YouTube links tagged to a subject, batch and NCERT chapter. The site's CSP allows frames only from YouTube and Maps.",
         tech: ["GET /api/lectures", "frame-src"],
@@ -327,7 +327,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 52.24,
+        at: 42.82,
         title: "The teacher's remark, already here",
         detail: "Remarks are stored per test mark, so the note typed during marks entry appears on the student's report-card page without anyone copying it.",
         tech: ["marks.remarks", "report cards"],
@@ -344,12 +344,12 @@ export const walkthrough: WalkFlow[] = [
     label: "Parent",
     actor: "Signed in as the student's father",
     summary: "The same rows again, reached through the parent's link to their child, and only that child.",
-    frame: { width: 1600, height: 896 },
+    frame: { width: 1600, height: 752 },
     video: {
       ...v("walk-parent"),
-      seconds: 31.93,
+      seconds: 38.87,
       description:
-        "Screen recording: a parent signs in, reads the summary of their child's progress and the chapters to practise, the performance charts, and the detail of the latest quiz.",
+        "Screen recording: a parent signs in, reads the summary of their child's progress and the chapters to practise, the performance charts, the detail of the latest quiz, the attendance calendar, the teachers' remarks and the monthly report cards.",
     },
     steps: [
       {
@@ -364,7 +364,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 9.25,
+        at: 7.25,
         title: "The same records the teacher wrote",
         detail: "Average, attendance and rank match the student's screen because they come from the same rows. 'Needs practice' is built from chapter-wise marks.",
         tech: ["resolveStudentId", "chapterMarks"],
@@ -375,7 +375,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 17.64,
+        at: 14.44,
         title: "Performance against the batch",
         detail: "Monthly trend, subject comparison and where the child stands, computed from published tests only.",
         tech: ["GET /api/analytics/students/:id"],
@@ -386,14 +386,37 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 25.61,
+        at: 21.33,
+        title: "The quiz published minutes ago",
+        detail: "The Ray Optics quiz the teacher just published is already in the list, with the child's score, rank among takers and the batch average.",
+        tech: ["GET /api/me/tests", "published only"],
+        log: [
+          { kind: "req", text: "GET /api/me/tests" },
+          { kind: "scope", text: "resolveStudentId → linked child ✓" },
+          { kind: "db", text: "WHERE tests.published = true · own result + rank among takers" },
+        ],
+      },
+      {
+        at: 27.5,
         title: "And nobody else's child",
-        detail: "The quiz published minutes ago is already here. Ask the API for a student who isn't linked and it answers 403.",
+        detail: "Attendance comes from the same registers the teacher marked. Ask the API for a student who isn't linked and it answers 403.",
         tech: ["assertReadStudent", "403"],
         log: [
           { kind: "req", text: "GET /api/attendance/students/<another student>" },
           { kind: "scope", text: "assertReadStudent → not in scope.studentIds" },
           { kind: "deny", text: "403 { code: 'forbidden', message: \"You don't have access to this student.\" }" },
+        ],
+      },
+      {
+        at: 33.53,
+        title: "Remarks and monthly report cards",
+        detail: "Teacher remarks come from published marks. Report cards are PDFs a scheduled job generates; a download is checked against the same scope, rate-limited, and served as a short-lived signed URL for the private bucket.",
+        tech: ["GET /api/report-cards", "presignGet"],
+        log: [
+          { kind: "req", text: "GET /api/report-cards" },
+          { kind: "scope", text: "learnerStudentIds(scope) → linked children only" },
+          { kind: "req", text: "GET /api/report-cards/:id/download" },
+          { kind: "res", text: "assertReadStudent ✓ · throttled · presignGet(fileKey, 300 s)" },
         ],
       },
     ],
@@ -404,10 +427,10 @@ export const walkthrough: WalkFlow[] = [
     label: "Admin",
     actor: "Signed in as Super Admin",
     summary: "The whole institute: analytics, the enquiry pipeline and an audit trail of every write.",
-    frame: { width: 1600, height: 896 },
+    frame: { width: 1600, height: 704 },
     video: {
       ...v("walk-admin"),
-      seconds: 37.6,
+      seconds: 45.1,
       description:
         "Screen recording: the Super Admin overview with live counts and charts, the leads inbox where an enquiry's status is changed, the audit log listing every write by person, and report-card settings.",
     },
@@ -424,7 +447,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 14.54,
+        at: 13.3,
         title: "Website enquiries become a pipeline",
         detail: "Enquiries from the public site land here with a status; phone numbers become call and WhatsApp buttons (blurred in this recording).",
         tech: ["PATCH /api/leads/:id", "leads.view"],
@@ -435,7 +458,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 24.19,
+        at: 30.14,
         title: "Every write, under the name of whoever made it",
         detail: "The audit row is written in the same transaction as the change, so the log can't drift from the data. Metadata never holds passwords or tokens.",
         tech: ["audit_logs", "same transaction"],
@@ -446,7 +469,7 @@ export const walkthrough: WalkFlow[] = [
         ],
       },
       {
-        at: 33.43,
+        at: 41.24,
         title: "Report cards, configured once",
         detail: "Sections, thresholds and branding drive the monthly PDF report cards that a scheduled job generates for every student.",
         tech: ["pdfkit", "cron"],
