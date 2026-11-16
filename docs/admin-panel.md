@@ -18,6 +18,8 @@
 - `/pulse` Site analytics: views and unique visitors per day, referrers, countries, time on page, scroll depth, how far down the page visitors get, resume and email clicks.
 - `/health` Database latency and migration version, notification backlog with a retry button, env checklist (set or missing, never values), deploy commit and region.
 
+**Region.** `vercel.json` pins functions to `sin1` (Singapore) because the Neon database is in AWS ap-southeast-1. The Vercel default (`iad1`, Washington) put an ocean between every query and the database: admin pages took 1 to 3 s. Keep the function region next to the database.
+
 **Cron.** `vercel.json` schedules `GET /api/cron` daily (Hobby allows one). It prunes page views older than 90 days and old sign-in attempts, and retries pending email notifications. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
 
 **Pulse privacy.** No cookies, no local storage and no stored IP addresses: a visitor is an HMAC of IP and user agent keyed with a random salt that is generated each day and deleted when the day ends, so visits cannot be linked across days, not even by the owner. Browsers that send Do Not Track or Global Privacy Control send nothing at all, and the admin host is never counted. Rows are deleted after 90 days.
