@@ -12,8 +12,9 @@
   Log lines in `walkthrough` name real routes, checks and audit actions from the code. They are a
   narrated trace, not captured server output, so no latency or byte count appears in them.
 
-  Lines marked `[CONFIRM]` await Mehul: they state his role or his opinion, which no source file
-  can verify. `hindsight` is opinion throughout.
+  Ownership confirmed by Mehul (2026-11-16): he designed, built and deployed all of it alone,
+  development through deployment, and runs it. Lines marked `[CONFIRM]` state his opinion,
+  which no source file can verify. `hindsight` is opinion throughout.
 */
 
 export const clientWork = {
@@ -24,7 +25,7 @@ export const clientWork = {
   summary:
     "A physics coaching institute's public website, its role-based portal and the API behind both. Six roles sign in at one login; attendance, marks, homework and files are written once and each role reads them through its own scope.",
   ownership:
-    "I built the Next.js site and portal, the Fastify API, the Postgres schema, auth, file storage and the Render deployment, and I run it.", // [CONFIRM] see report
+    "I designed, built and deployed all of it alone, and I run it: the Next.js site and portal, the Fastify API, the Postgres schema, auth, file storage and the Render deployment.",
 
   /* Counted in the codebase. */
   facts: [

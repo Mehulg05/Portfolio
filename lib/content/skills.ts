@@ -5,8 +5,8 @@
 // research = used in the manuscript
 // learning = studied, or in progress and not yet released
 //
-// [DRAFT] Alpha Academy entries assume the ownership line in client-work.ts, still marked
-// [DRAFT] there. If Mehul narrows it, narrow these notes and depths to match.
+// Alpha Academy ownership confirmed by Mehul (2026-11-16): designed, built, deployed and run by
+// him alone, so its entries count as shipped.
 //
 // Each note is a proof pointer: where the skill was used, then its state. Keep notes under
 // about 90 characters; the explorer shows them on one line.

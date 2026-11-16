@@ -48,5 +48,5 @@ The contact form's own variables are listed in `docs/contact-backend.md`.
 
 ## Before deploying
 
-- Search `lib/content/` for `[DRAFT]` and replace each marked line with confirmed wording.
+- Search `lib/content/` for `[CONFIRM]` and settle each marked line before it goes live.
 - Update `now.asOf` in `lib/content/roadmap.ts`. The footer prints it as "Last updated".

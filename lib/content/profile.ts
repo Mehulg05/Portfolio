@@ -11,9 +11,8 @@ export const profile = {
   intro:
     "I build the systems businesses run on, and want to bring machine learning into them.",
   /** Who he is. No employer names here: the Experience section carries those. */
-  // [DRAFT] The client sentence leans on the Alpha Academy ownership line, still marked [DRAFT] in client-work.ts.
   summary:
-    "Final-year computer science student at Bennett University. At work I designed and built a payroll and HR module that now runs in production. For a client, I built a coaching institute's website and portal, also live. I also do machine learning research, with a manuscript under review.",
+    "Final-year computer science student at Bennett University. At work I designed and built a payroll and HR module that now runs in production. For a client, I designed, built and deployed a coaching institute's website and portal on my own, and I still run it. I also do machine learning research, with a manuscript under review.",
   /** One role family, stated once. Not cycled. */
   openTo: "Backend, full-stack and AI/ML engineering roles",
   role: "Developer Trainee, Sahayogi One",
@@ -29,7 +28,7 @@ export const profile = {
 
 /**
  * Link preview and search copy, kept separate so it cannot drift into slogan territory.
- * Under 160 characters each. [DRAFT] The portal claim shares the Alpha Academy ownership caveat.
+ * Under 160 characters each.
  */
 export const meta = {
   title: "Mehul Gupta",
