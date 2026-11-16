@@ -68,8 +68,8 @@ export function SystemMapExplorer() {
   return (
     <>
       {/* The legend doubles as a filter, and sits above the map so it is read first. */}
-      <Reveal className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+      <Reveal className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           {filters.map((item) => {
             const isActive = filter === item.depth;
             return (
@@ -79,7 +79,7 @@ export function SystemMapExplorer() {
                 aria-pressed={isActive}
                 title={item.hint}
                 onClick={() => setFilter(isActive ? null : item.depth)}
-                className={`flex min-h-11 items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] sm:min-h-0 ${
+                className={`flex min-h-11 items-center gap-2 border px-3 py-1.5 label-mono sm:min-h-0 ${
                   isActive
                     ? "border-accent bg-surface text-ink"
                     : "border-line text-ink-faint hover:border-line-bright hover:text-ink-dim"
@@ -93,7 +93,7 @@ export function SystemMapExplorer() {
           })}
         </div>
 
-        <p className="font-mono text-[11px] text-ink-faint tabular-nums">
+        <p className="label-mono text-ink-faint tabular-nums">
           {filter ? `${matching} of ${allSkills.length} shown` : `${allSkills.length} entries`}
         </p>
       </Reveal>
@@ -101,14 +101,14 @@ export function SystemMapExplorer() {
       {/* Readout above the map: a fixed-height line, so hovering never moves the page. */}
       <div
         aria-hidden="true"
-        className="mt-3 flex min-h-[2.5rem] items-center gap-3 border border-accent/40 border-l-2 border-l-accent bg-accent-deep/25 px-4 py-2 text-[14px] leading-snug text-ink"
+        className="mt-3 flex min-h-20 flex-wrap content-center items-center gap-x-3 gap-y-0.5 border border-accent/40 border-l-2 border-l-accent bg-accent-deep/25 px-4 py-2 text-[14px] leading-snug text-ink sm:min-h-10 sm:flex-nowrap"
       >
         {shown ? (
           <>
-            <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-accent">
+            <span className="label-mono text-accent sm:shrink-0">
               {shown.name}
             </span>
-            <span className="text-ink-faint">·</span>
+            <span className="hidden text-ink-faint sm:inline">·</span>
             <span className="text-ink">{shown.note}</span>
           </>
         ) : (
@@ -122,7 +122,7 @@ export function SystemMapExplorer() {
       <div className="mt-3 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
         {pipeline.map((stage, i) => (
           <Reveal key={stage.id} delay={Math.min(i, 3) * 70} className="bg-ground px-4 py-2.5">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+            <h3 className="label-mono text-accent">
               {i + 1 < 10 ? `0${i + 1}` : i + 1} · {stage.label}
             </h3>
             <p className="mt-0.5 text-[12px] leading-snug text-ink-faint">{stage.caption}</p>
@@ -138,7 +138,7 @@ export function SystemMapExplorer() {
       {/* Intelligence branch */}
       <Reveal className="mt-px border border-line bg-surface px-4 py-2.5">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-redline">
+          <h3 className="label-mono text-redline">
             {intelligence.label}
           </h3>
           <p className="text-[12px] text-ink-faint">{intelligence.caption}</p>
@@ -149,7 +149,6 @@ export function SystemMapExplorer() {
           ))}
         </ul>
       </Reveal>
-
     </>
   );
 }

@@ -10,6 +10,9 @@
 
   RBH Solutions: from Mehul (2026-09-28): SCADA software; admin and customer panels;
   role-based screens for super admin, tech team and customer views. Stack not yet given.
+
+  The Sahayogi One stack tags (Next.js, NestJS, PostgreSQL, Docker) come from the resume's
+  role line.
 */
 
 export type Product = {
@@ -47,12 +50,15 @@ export const roles: Role[] = [
     company: "Sahayogi One",
     title: "Developer Trainee",
     period: "Jun 2026 – present",
-    summary: "Core product engineering team at a Noida startup that builds business software for Indian SMEs.",
+    summary: "Core product team at a Noida startup that builds business software for Indian SMEs.",
     highlights: [
-      "Built a payroll and HR module end to end: attendance, leave policies, payroll processing, PF/ESI/TDS compliance, onboarding and full-and-final settlement. Live in production.",
-      "Wrote the HLD and LLD (database schema and API contracts) before any code. The senior team signed them off, and the module shipped only after code review and QA covering functional, edge-case and regression testing.",
+      "Designed the payroll and HR module before writing code: HLD, LLD, database schema and API contracts, approved by the senior team.",
+      "Built it end to end: attendance, leave policies, payroll processing, PF/ESI/TDS compliance, onboarding and full-and-final settlement.",
+      "Gave it role-based access at three levels.",
+      "Shipped it through code review and QA covering functional, edge-case and regression tests. It runs in production.",
       "Now integrating Meta's WhatsApp Business APIs into the company's messaging product.",
     ],
+    stack: ["Next.js", "NestJS", "PostgreSQL", "Docker"],
     current: true,
   },
   {
@@ -61,10 +67,10 @@ export const roles: Role[] = [
     title: "Full Stack Developer Intern",
     period: "Jun – Jul 2025",
     summary:
-      "SCADA software for monitoring industrial equipment remotely. Worked across the admin panel and the customer panel.",
+      "Remote internship on SCADA software, which lets operators and clients monitor industrial equipment from anywhere.",
     highlights: [
-      "Built role-based screens so each user sees only what their role allows: a super admin view to manage the whole system, a tech team view for the internal technical team, and a customer view limited to a client's own sites and data.",
-      "Built and updated screens across the admin panel, where the system is run and configured.",
+      "Built role-based screens for three roles, each seeing only what it may: super admin over the whole system, the internal tech team, and customers limited to their own sites and data.",
+      "Built and updated admin-panel screens, where the system is run and configured.",
       "Built several customer-panel screens, the part clients log in to and use.",
     ],
   },

@@ -13,6 +13,8 @@ const READ_LINE = 0.35;
 
 export function SiteHeader() {
   const [activeId, setActiveId] = useState<string>(sections[0].id);
+  const headerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
@@ -59,6 +61,10 @@ export function SiteHeader() {
       lines.forEach((line, index) => {
         if (y >= line) current = index;
       });
+      // A last section shorter than the space under the reading line can never cross it;
+      // at the bottom of the page it is the one being read.
+      const root = document.documentElement;
+      if (root.scrollHeight > root.clientHeight && y >= root.scrollHeight - root.clientHeight - 1) current = navSections.length - 1;
 
       tickRefs.current.forEach((tick, index) => {
         tick?.toggleAttribute("data-passed", index <= current);
@@ -69,8 +75,15 @@ export function SiteHeader() {
       setActiveId(current < 0 ? sections[0].id : navSections[current].id);
     };
 
+    // Anchor targets land under the header by this much (scroll-margin-top in globals.css).
+    const publishHeight = () => {
+      const height = headerRef.current?.getBoundingClientRect().height;
+      if (height) document.documentElement.style.setProperty("--header-h", `${Math.round(height)}px`);
+    };
+
     // A disclosure opening or a pinned section changing height moves every section below it.
     const resizeObserver = new ResizeObserver(() => {
+      publishHeight();
       layout();
       refreshScrollProgress();
     });
@@ -80,6 +93,7 @@ export function SiteHeader() {
     layout();
     const unsubscribe = observeScrollProgress(body, paint);
     resizeObserver.observe(body);
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
     window.addEventListener("resize", onResize);
     window.visualViewport?.addEventListener("resize", onResize);
 
@@ -91,8 +105,29 @@ export function SiteHeader() {
     };
   }, []);
 
+  /*
+    Below lg the nav is a row that scrolls sideways. Keep the current section's link in
+    that row's view, or a phone visitor reading Research sees only "Experience · Client
+    Work" with nothing highlighted.
+  */
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    const link = nav.querySelector<HTMLElement>(`a[href="#${activeId}"]`);
+    if (!link) return;
+    // Measured against the row itself: the link's offsetParent is the sticky header.
+    const row = nav.getBoundingClientRect();
+    const box = link.getBoundingClientRect();
+    if (box.left >= row.left && box.right <= row.right) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    nav.scrollTo({
+      left: nav.scrollLeft + box.left - row.left - 8,
+      behavior: reduced ? "auto" : "smooth",
+    });
+  }, [activeId]);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
+    <header ref={headerRef} className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-1.5 sm:px-8 lg:gap-6 lg:py-3">
         {/*
           Below lg the same links sit in one row that scrolls sideways, so a phone gets a
@@ -101,6 +136,7 @@ export function SiteHeader() {
           reads as "scroll for more" rather than the end of the menu.
         */}
         <nav
+          ref={navRef}
           aria-label="Sections"
           className="nav-scroll -ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
         >

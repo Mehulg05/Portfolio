@@ -45,7 +45,7 @@ export function RevisionTrack() {
   const current = milestones[active.index];
 
   return (
-    <div ref={containerRef} className="mt-14 lg:grid lg:grid-cols-[1fr_240px] lg:gap-14">
+    <div ref={containerRef} className="mt-8 lg:grid lg:grid-cols-[1fr_240px] lg:gap-14">
       {/*
         Pinned column on the right, desktop and motion only: the ID card for the step
         you have scrolled to, hanging from the top of the viewport. Rendered first so the timeline stays the
@@ -88,7 +88,7 @@ export function RevisionTrack() {
               }
             >
               <p
-                className={`font-mono text-[11px] uppercase tracking-[0.14em] ${
+                className={`label-mono ${
                   milestone.current ? "text-accent" : "text-ink-faint"
                 }`}
               >
@@ -99,9 +99,9 @@ export function RevisionTrack() {
                 {milestone.title}
               </h3>
 
-              <p className="mt-1.5 font-mono text-[11px] text-ink-faint">{milestone.context}</p>
+              <p className="mt-1 text-note text-ink-dim">{milestone.context}</p>
 
-              <div className="mt-4 flex max-w-[64ch] flex-col gap-3 text-[15px] leading-relaxed text-ink-dim sm:text-[16px]">
+              <div className="measure mt-4 flex flex-col gap-3 text-body text-ink-dim">
                 {milestone.story.map((paragraph) => (
                   <p key={paragraph.slice(0, 32)}>{paragraph}</p>
                 ))}

@@ -1,27 +1,7 @@
 "use client";
 
 import { createElement } from "react";
-
-// One observer for the whole page rather than one per element.
-let sharedObserver: IntersectionObserver | null = null;
-
-function getObserver() {
-  if (typeof window === "undefined") return null;
-  if (!sharedObserver) {
-    sharedObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-revealed");
-            sharedObserver?.unobserve(entry.target);
-          }
-        }
-      },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
-    );
-  }
-  return sharedObserver;
-}
+import { watchReveal } from "@/lib/motion/reveal";
 
 type Props = {
   children: React.ReactNode;
@@ -30,18 +10,13 @@ type Props = {
   delay?: number;
 };
 
-// A callback ref with cleanup (React 19) instead of useRef + useEffect: the element is
-// observed when it mounts and unobserved when it unmounts.
-function observeReveal(node: HTMLElement | null) {
+// A callback ref with cleanup (React 19): watched when it mounts, released when it unmounts.
+const observeReveal = (node: HTMLElement | null) => {
   if (!node) return;
-
-  // No js-motion class means reduced motion or no JS gate — content is already visible.
+  // No js-motion class means reduced motion or no JS: the content is already visible.
   if (!document.documentElement.classList.contains("js-motion")) return;
-
-  const observer = getObserver();
-  observer?.observe(node);
-  return () => observer?.unobserve(node);
-}
+  return watchReveal(node);
+};
 
 export function Reveal({ children, as = "div", className, delay = 0 }: Props) {
   return createElement(

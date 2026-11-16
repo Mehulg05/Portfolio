@@ -9,10 +9,11 @@ export const profile = {
   graduation: "2027",
   /** The page's first sentence: where he is going, not where he has been. Experience lives below. */
   intro:
-    "Still learning, and eager to build the systems businesses run on and make them intelligent.",
+    "I build the systems businesses run on, and want to bring machine learning into them.",
   /** Who he is. No employer names here: the Experience section carries those. */
+  // [DRAFT] The client sentence leans on the Alpha Academy ownership line, still marked [DRAFT] in client-work.ts.
   summary:
-    "Final-year computer science student at Bennett University. Full-stack engineer by practice, machine learning researcher by interest. Comfortable owning a system from design to production, and curious about where a model could make it better. The aim is simple: software businesses can depend on, with intelligence built in.",
+    "Final-year computer science student at Bennett University. At work I designed and built a payroll and HR module that now runs in production. For a client, I built a coaching institute's website and portal, also live. I also do machine learning research, with a manuscript under review.",
   /** One role family, stated once. Not cycled. */
   openTo: "Backend, full-stack and AI/ML engineering roles",
   role: "Developer Trainee, Sahayogi One",
@@ -26,13 +27,16 @@ export const profile = {
   // Phone deliberately omitted from the public site. It invites spam and adds nothing a recruiter needs.
 } as const;
 
-/** Link preview and search copy, kept separate so it cannot drift into slogan territory. */
+/**
+ * Link preview and search copy, kept separate so it cannot drift into slogan territory.
+ * Under 160 characters each. [DRAFT] The portal claim shares the Alpha Academy ownership caveat.
+ */
 export const meta = {
   title: "Mehul Gupta",
   description:
-    "Final-year B.Tech CSE student at Bennett University. Developer Trainee at Sahayogi One, where I built a payroll module now in production. Wheat-yield research manuscript under review.",
+    "Built a payroll and HR module now in production at Sahayogi One, and a live portal for a coaching institute. Final-year CSE student at Bennett University.",
   ogDescription:
-    "Developer Trainee at Sahayogi One (built a payroll module, live in production) and final-year CSE student at Bennett University. Wheat-yield research under review.",
+    "Payroll and HR module in production at Sahayogi One. A live client portal for a coaching institute. Final-year CSE student, ML manuscript under review.",
 } as const;
 
 export const education = [
@@ -73,14 +77,14 @@ export const academicProjects: AcademicProject[] = [
   {
     name: "UniRyde",
     period: "Mar 2026",
-    what: "Ride sharing for university students, so they can split cab costs. Student verification, sign-in and matching.",
+    what: "Matches verified university students travelling the same way so they can split the cab fare. Student verification, sign-in and route matching on the Google Maps API.",
     stack: ["React.js", "HTML", "CSS", "MongoDB", "Google Maps API"],
     status: "Code private · not deployed",
   },
   {
     name: "Ocasio",
     period: "Feb 2025",
-    what: "A platform that brings event organisers, photographers and planners together, with verified listings, recommendations and payments.",
+    what: "Puts event organisers, photographers and planners on one platform, with verified listings, AI-powered recommendations and payments.",
     status: "Code private · not deployed",
   },
 ];
@@ -144,6 +148,6 @@ export const achievements = [
   },
   {
     title: "Battle of Brains, 1st place",
-    detail: "Intra-district, MAT and General Knowledge",
+    detail: "Intra-district quiz, MAT and General Knowledge",
   },
 ];

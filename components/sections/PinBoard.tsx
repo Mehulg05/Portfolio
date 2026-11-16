@@ -1,34 +1,25 @@
-"use client";
-
-import { useRef, type CSSProperties } from "react";
-import { usePinSwing } from "@/lib/motion/use-pin-swing";
+import type { CSSProperties } from "react";
 import { certifications, courseraVerify } from "@/lib/content/profile";
 
 /*
   The certifications, pinned to a board. Each is an index card held by one pushpin at
-  the top and hung a degree or two off square; on desktop it swings on the pin when
-  brushed, scrolled past or dragged (use-pin-swing). Below that, and with reduced
-  motion, the cards keep their tilt and stay put.
+  the top and hung a touch off square. The board is still on purpose: the tilt alone says
+  "pinned by hand", and a certificate that moves would read as a toy.
 */
 
-/* Rest tilts, one per card, in degrees. Alternating so the row reads as hung by hand. */
-const TILTS = [-1.6, 1.2, -0.9, 1.7, -1.3, 1.1];
+/* Rest tilts, one per card, in degrees. Alternating, and small enough to read straight. */
+const TILTS = [-0.8, 0.6, -0.5, 0.9, -0.7, 0.5];
 
 export function PinBoard() {
   return (
     <ul className="pin-board grid grid-cols-1 gap-x-6 gap-y-7 border border-line px-5 pt-7 pb-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
       {certifications.map((item, index) => (
-        <PinCard
-          key={item.name}
-          tilt={TILTS[index % TILTS.length]}
-          kick={0.7 + ((index * 7) % 5) * 0.15}
-        >
+        <PinCard key={item.name} tilt={TILTS[index % TILTS.length]}>
           {item.credentialId ? (
             <a
               href={`${courseraVerify}${item.credentialId}`}
               target="_blank"
               rel="noopener noreferrer"
-              draggable={false}
               className="text-[14px] leading-snug text-ink hover:text-accent"
             >
               {item.name}
@@ -50,13 +41,9 @@ export function PinBoard() {
   );
 }
 
-function PinCard({ tilt, kick, children }: { tilt: number; kick: number; children: React.ReactNode }) {
-  const ref = useRef<HTMLLIElement>(null);
-  usePinSwing(ref, { rest: tilt, pivotY: 9, kick });
-
+function PinCard({ tilt, children }: { tilt: number; children: React.ReactNode }) {
   return (
     <li
-      ref={ref}
       className="pin-card relative flex min-h-[120px] flex-col border border-line-bright bg-surface-2 px-5 pt-6 pb-4"
       style={{ "--tilt": `${tilt}deg` } as CSSProperties}
     >

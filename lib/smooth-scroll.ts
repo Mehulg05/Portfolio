@@ -1,16 +1,16 @@
-import type Lenis from "lenis";
+import type { SmoothScrollController } from "@/lib/motion/smooth-scroll";
 
 /*
-  Lenis is created inside <SmoothScroll /> and never rendered into the tree, so there is
-  no context to reach it through. A modal has to pause it — otherwise the wheel keeps
-  driving the page behind the dialog — so the instance is parked here instead.
+  The wheel smoother is created inside <SmoothScroll /> and never rendered into the tree,
+  so there is no context to reach it through. A modal has to pause it — otherwise the
+  wheel keeps driving the page behind the dialog — so the instance is parked here.
 
-  Null whenever smooth scroll is off (reduced motion, or before the chunk lands), and
-  every accessor is a no-op in that case: the CSS scroll lock covers those paths.
+  Null whenever smoothing is off (the default, reduced motion, touch, narrow screens), and
+  every accessor is a no-op then: the CSS scroll lock covers those paths.
 */
-let instance: Lenis | null = null;
+let instance: SmoothScrollController | null = null;
 
-export function registerSmoothScroll(next: Lenis | null) {
+export function registerSmoothScroll(next: SmoothScrollController | null) {
   instance = next;
 }
 
