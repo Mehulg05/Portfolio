@@ -3,9 +3,8 @@ import { certifications, courseraVerify } from "@/lib/content/profile";
 
 /*
   The certifications, pinned to a board. Each is an index card held by one pushpin at
-  the top and hung a touch off square. They used to swing on the pin when brushed or
-  dragged; a certificate that wobbles reads as a toy, so the board is still now and the
-  tilt alone says "pinned by hand".
+  the top and hung a touch off square. The board is still on purpose: the tilt alone says
+  "pinned by hand", and a certificate that moves would read as a toy.
 */
 
 /* Rest tilts, one per card, in degrees. Alternating, and small enough to read straight. */

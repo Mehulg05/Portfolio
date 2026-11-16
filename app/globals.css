@@ -436,8 +436,8 @@ section[id] {
   Bright grid — a second copy of the schematic grid, in accent, revealed only in a small
   radius around the pointer (--gx/--gy, written by HeroPortrait's rAF loop). It is the one
   ambient answer to the cursor, and it tells the visitor the sheet is live before the
-  sketch hint does. A torch layer (a bright dot plus a glow) used to sit on top of it; it
-  read as a custom cursor and was removed.
+  sketch hint does. Deliberately the only one: a second cursor-follower reads as a
+  custom cursor.
 */
 .sheet-grid-bright {
   position: absolute;

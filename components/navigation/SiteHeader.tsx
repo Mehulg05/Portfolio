@@ -63,7 +63,7 @@ export function SiteHeader() {
       // A last section shorter than the space under the reading line can never cross it;
       // at the bottom of the page it is the one being read.
       const root = document.documentElement;
-      if (y >= root.scrollHeight - root.clientHeight - 1) current = navSections.length - 1;
+      if (root.scrollHeight > root.clientHeight && y >= root.scrollHeight - root.clientHeight - 1) current = navSections.length - 1;
 
       tickRefs.current.forEach((tick, index) => {
         tick?.toggleAttribute("data-passed", index <= current);

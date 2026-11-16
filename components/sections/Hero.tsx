@@ -67,8 +67,8 @@ export function Hero() {
         <div className="relative z-10 mt-10 sm:mt-16">
           {/*
             The name above is the page h1, so the intro is a paragraph. It rises as one
-            block with the rest of the stage: a word-by-word cascade made the visitor wait
-            to read the one sentence that says what this page is.
+            block, with the summary, so the sentence that says what this page is can be
+            read at once.
           */}
           <p
             className="hero-rise max-w-[26ch] font-display text-[2rem] leading-[1.05] tracking-tight text-ink sm:text-[2.6rem] lg:text-[3rem]"

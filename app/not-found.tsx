@@ -14,7 +14,7 @@ const titleBlock = [
 
 export default function NotFound() {
   return (
-    <main className="relative flex min-h-svh flex-1 items-center overflow-hidden">
+    <main id="top" className="relative flex min-h-svh flex-1 items-center overflow-hidden">
       <div className="sheet-grid pointer-events-none absolute inset-0" aria-hidden="true" />
 
       <div className="relative mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
