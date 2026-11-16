@@ -6,7 +6,7 @@ import { roles } from "@/lib/content/experience";
 
 export function Experience() {
   return (
-    <section id="experience" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+    <section id="experience" className="sheet-section">
       <SectionHeader
         label="Experience"
         title="Experience"
@@ -27,27 +27,27 @@ export function Experience() {
                   {role.company}
                 </h3>
                 <span
-                  className={`font-mono text-[11px] uppercase tracking-[0.14em] ${
+                  className={`label-mono ${
                     role.current ? "text-accent" : "text-ink-faint"
                   }`}
                 >
                   {role.period}
                 </span>
               </div>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-dim">
+              <p className="mt-1 label-mono text-ink-dim">
                 {role.title}
               </p>
             </header>
 
             <div className="flex flex-1 flex-col px-5 py-5 sm:px-6">
-              <p className="text-[14px] leading-relaxed text-ink-dim">{role.summary}</p>
+              <p className="measure text-body text-ink-dim">{role.summary}</p>
 
               {role.highlights ? (
                 <ul className="mt-3 flex flex-col gap-2">
                   {role.highlights.map((line) => (
                     <li key={line} className="flex gap-3">
-                      <span aria-hidden="true" className="mt-[8px] h-1 w-1 shrink-0 bg-accent" />
-                      <p className="text-[14px] leading-relaxed text-ink-dim">{line}</p>
+                      <span aria-hidden="true" className="mt-2.5 h-1 w-1 shrink-0 bg-accent" />
+                      <p className="measure text-body text-ink-dim">{line}</p>
                     </li>
                   ))}
                 </ul>
@@ -73,22 +73,22 @@ export function Experience() {
                           {product.name}
                         </h4>
                         {product.period ? (
-                          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+                          <span className="label-mono text-ink-faint">
                             {product.period}
                           </span>
                         ) : null}
                         {product.status ? (
-                          <span className="border border-line-bright px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-dim">
+                          <span className="border border-line-bright px-2 py-0.5 badge-mono text-ink-dim">
                             {product.status}
                           </span>
                         ) : null}
                       </div>
 
-                      <p className="mt-2.5 max-w-[68ch] text-[15px] leading-relaxed text-ink-dim">
+                      <p className="mt-2.5 measure text-body text-ink-dim">
                         {product.what}
                       </p>
 
-                      <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink">
+                      <p className="mt-3 measure text-body text-ink">
                         {product.ownership}
                       </p>
 
@@ -96,8 +96,8 @@ export function Experience() {
                         <ul className="mt-3 flex flex-col gap-2">
                           {product.details.map((line) => (
                             <li key={line} className="flex gap-3">
-                              <span aria-hidden="true" className="mt-[9px] h-1 w-1 shrink-0 bg-accent" />
-                              <p className="max-w-[66ch] text-[14px] leading-relaxed text-ink-dim">{line}</p>
+                              <span aria-hidden="true" className="mt-2.5 h-1 w-1 shrink-0 bg-accent" />
+                              <p className="measure text-body text-ink-dim">{line}</p>
                             </li>
                           ))}
                         </ul>
@@ -118,7 +118,6 @@ export function Experience() {
                   ))}
                 </div>
               ) : null}
-
             </div>
           </Reveal>
         ))}

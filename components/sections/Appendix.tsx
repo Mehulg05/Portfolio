@@ -12,19 +12,17 @@ import { education } from "@/lib/content/profile";
 */
 export function Appendix() {
   return (
-    <section id="education" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+    <section id="education" className="sheet-section">
       <SectionHeader label="Education" title="Education and certifications" />
 
-      <Reveal className="mt-6">
-        <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-          Education
-        </h3>
+      <Reveal className="mt-8">
+        <h3 className="label-mono text-accent">Education</h3>
         <ul className="mt-3 grid grid-cols-1 gap-px border border-line bg-line md:grid-cols-3">
           {education.map((item, index) => (
             <li key={item.qualification} className="flex flex-col bg-surface px-5 py-4">
-              <span className="font-mono text-[11px] text-ink-faint">{item.period}</span>
-              <p className="mt-2 text-[15px] leading-snug text-ink">{item.qualification}</p>
-              <p className="mt-1 text-[13px] text-ink-dim">{item.institution}</p>
+              <span className="label-mono text-ink-faint">{item.period}</span>
+              <p className="mt-2 text-body text-ink">{item.qualification}</p>
+              <p className="mt-1 text-note text-ink-dim">{item.institution}</p>
               <p
                 className={`mt-auto pt-3 font-display text-2xl tracking-tight ${
                   index === 0 ? "text-accent" : "text-ink"
@@ -38,9 +36,7 @@ export function Appendix() {
       </Reveal>
 
       <Reveal className="mt-6">
-        <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-          Certifications
-        </h3>
+        <h3 className="label-mono text-accent">Certifications</h3>
         <div className="mt-3">
           <PinBoard />
         </div>

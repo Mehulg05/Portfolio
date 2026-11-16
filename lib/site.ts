@@ -13,3 +13,6 @@ export const brand = {
   inkDim: "#939dac",
   accent: "#5c8dff",
 } as const;
+
+/** The repository this site is built from, linked in the footer. */
+export const sourceUrl = "https://github.com/Mehulg05/Portfolio";

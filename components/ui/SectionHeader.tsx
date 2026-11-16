@@ -9,23 +9,30 @@ type Props = {
 
 // The rule, the corner ticks and the typing are all in globals.css under `.plot-header`.
 export function SectionHeader({ label, title, caption }: Props) {
+  // A label that only repeats the title reads as a stutter, so the title stands alone.
+  const showLabel = label.trim().toLowerCase() !== title.trim().toLowerCase();
+
   return (
     <Reveal as="header" className="plot-header tick-frame">
-      <div className="flex items-baseline gap-4 font-mono text-[11px] uppercase tracking-[0.16em]">
-        <span
-          className="plot-label text-ink-faint"
-          // One typing step per character.
-          style={{ "--n": label.length } as CSSProperties}
-        >
-          {label}
-        </span>
-      </div>
-      <h2 className="plot-title mt-4 font-display text-3xl tracking-tight text-ink sm:text-4xl">
+      {showLabel ? (
+        <div className="flex items-baseline gap-4 label-mono">
+          <span
+            className="plot-label text-ink-faint"
+            // One typing step per character.
+            style={{ "--n": label.length } as CSSProperties}
+          >
+            {label}
+          </span>
+        </div>
+      ) : null}
+      <h2
+        className={`plot-title font-display text-3xl tracking-tight text-ink sm:text-4xl ${
+          showLabel ? "mt-4" : ""
+        }`}
+      >
         {title}
       </h2>
-      {caption ? (
-        <p className="plot-caption mt-3 max-w-[62ch] text-ink-dim">{caption}</p>
-      ) : null}
+      {caption ? <p className="plot-caption measure mt-3 text-ink-dim">{caption}</p> : null}
     </Reveal>
   );
 }

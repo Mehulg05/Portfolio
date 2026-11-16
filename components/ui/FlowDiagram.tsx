@@ -9,7 +9,7 @@ export type FlowNode = { label: string; note: string };
 export function FlowDiagram({ nodes, label }: { nodes: FlowNode[]; label: string }) {
   return (
     <figure className="m-0">
-      <figcaption className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+      <figcaption className="label-mono text-ink-faint">
         {label}
       </figcaption>
 

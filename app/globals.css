@@ -34,15 +34,14 @@
 }
 
 html {
-  scroll-behavior: smooth;
   /* Reserved permanently so locking the page for a modal cannot shift it sideways.
      A no-op on overlay-scrollbar platforms; ~15px of centred slack on Windows. */
   scrollbar-gutter: stable;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: no-preference) {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
   }
 }
 
@@ -63,20 +62,76 @@ body {
   outline-offset: 3px;
 }
 
+/*
+  In-page links are plain anchors. The margin is negative so a section lands with its
+  heading, not its top padding, just under the sticky header: header height + 1rem of air
+  - the section's top padding. --header-h is measured by SiteHeader; the fallbacks are
+  its usual heights, for the first paint and for no-JS.
+*/
+:root {
+  --header-h: 57px;
+  --section-pad-top: 5rem;
+}
+@media (min-width: 640px) {
+  :root {
+    --section-pad-top: 6rem;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 65px;
+  }
+}
 section[id] {
-  scroll-margin-top: 5rem;
+  scroll-margin-top: calc(var(--header-h) + 1rem - var(--section-pad-top));
 }
 
-/* Lenis — smooth scroll is opt-in and only mounted when motion is allowed. */
-html.lenis,
-html.lenis body {
-  height: auto;
+/*
+  The sheet's type and rhythm, named once so the sections cannot drift apart again.
+  `sheet-section` reads --section-pad-top rather than restating it: the scroll-margin
+  above only lands a heading under the header if the two are the same number.
+  Sizes are in rem so they follow the visitor's base font size (15px, 13px, 11px, 10px).
+*/
+@utility sheet-section {
+  margin-inline: auto;
+  max-width: var(--container-6xl);
+  padding: var(--section-pad-top) 1.25rem;
+  @media (min-width: 640px) {
+    padding-inline: 2rem;
+  }
 }
-html.lenis-smooth {
-  scroll-behavior: auto !important;
+
+/* Running copy in cards and timelines. */
+@utility text-body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
 }
-.lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
+
+/* Secondary lines under a heading: institutions, places, footnotes. */
+@utility text-note {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Mono drawing-sheet labels: periods, sub-headings, captions. Colour stays separate. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* The same voice inside a bordered chip, a size down so the box stays tight. */
+@utility badge-mono {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* One reading width for paragraphs. */
+@utility measure {
+  max-width: 64ch;
 }
 
 /*
@@ -148,11 +203,6 @@ html.lenis-smooth {
   animation: build-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: calc(var(--step, 0) * 90ms + 200ms);
 }
-.hero-word {
-  display: inline-block;
-  animation: build-rise 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
@@ -161,8 +211,7 @@ html.lenis-smooth {
     transform: none;
     transition: none;
   }
-  .hero-rise,
-  .hero-word {
+  .hero-rise {
     animation: none;
   }
 }
@@ -208,25 +257,26 @@ html.lenis-smooth {
 }
 
 .js-motion .plot-header.is-revealed {
-  animation: plot-draw 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation: plot-draw 0.45s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 .js-motion .plot-header.is-revealed::before,
 .js-motion .plot-header.is-revealed::after {
   transform-origin: top left;
-  animation: plot-stamp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.42s both;
+  animation: plot-stamp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.3s both;
 }
 .js-motion .plot-header.is-revealed::after {
   transform-origin: top right;
-  animation-delay: 0.58s;
+  animation-delay: 0.42s;
 }
+/* Quick enough that a visitor arriving from the nav is reading the title within ~0.7s. */
 .js-motion .plot-header.is-revealed .plot-label {
-  animation: plot-type calc(var(--n) * 30ms) steps(var(--n)) 0.28s both;
+  animation: plot-type calc(var(--n) * 22ms) steps(var(--n)) 0.12s both;
 }
 .js-motion .plot-header.is-revealed .plot-title {
-  animation: build-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.62s both;
+  animation: build-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.2s both;
 }
 .js-motion .plot-header.is-revealed .plot-caption {
-  animation: build-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.76s both;
+  animation: build-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.3s both;
 }
 @keyframes plot-draw {
   from {
@@ -294,6 +344,11 @@ html.lenis-smooth {
   it against the foot of the portrait, and the portrait holds the right column across
   both rows. Below `lg` the grid collapses and the three stack in source order.
 */
+/* The hero has no section padding: #top (the skip link, the logo position) is scrollY 0. */
+#top {
+  scroll-margin-top: var(--header-h);
+}
+
 .hero-name {
   font-family: var(--font-display);
   font-weight: 700;
@@ -378,34 +433,11 @@ html.lenis-smooth {
 }
 
 /*
-  Torch. A small light that follows the cursor across the whole hero — not just the
-  portrait. Two gradients in one layer: a tiny bright core (the "bulb", ~9px) and a
-  soft accent falloff around it (~170px) — deliberately small, so it reads as a torch
-  passing over the scene rather than a spotlight sitting on it. Both gradients share
-  the same --gx/--gy already written every frame by HeroPortrait's rAF loop, so this
-  layer costs zero extra JS and never drifts out of sync with the portrait's own mask.
-*/
-.hero-torch {
-  --gx: -999px;
-  --gy: -999px;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  background:
-    radial-gradient(circle 9px at var(--gx) var(--gy), color-mix(in srgb, var(--color-ink) 85%, transparent), transparent 100%),
-    radial-gradient(circle 170px at var(--gx) var(--gy), color-mix(in srgb, var(--color-accent) 16%, transparent) 0%, transparent 75%);
-}
-.hero-section.is-lit .hero-torch {
-  opacity: 1;
-}
-
-/*
-  Bright grid — a second copy of the schematic grid, in accent, revealed only inside a
-  small radius around the torch. Same --gx/--gy as the torch above, so the grid lines
-  brighten exactly where the light passes rather than as a separate effect layered on top.
+  Bright grid — a second copy of the schematic grid, in accent, revealed only in a small
+  radius around the pointer (--gx/--gy, written by HeroPortrait's rAF loop). It is the one
+  ambient answer to the cursor, and it tells the visitor the sheet is live before the
+  sketch hint does. Deliberately the only one: a second cursor-follower reads as a
+  custom cursor.
 */
 .sheet-grid-bright {
   position: absolute;
@@ -415,8 +447,8 @@ html.lenis-smooth {
   opacity: 0;
   transition: opacity 0.3s ease;
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px);
   background-size: 72px 72px;
   background-position: center top;
   -webkit-mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
@@ -428,7 +460,7 @@ html.lenis-smooth {
 
 /* The corner stamp cells brighten under a direct hover — the simplest honest way for a
    discrete, non-continuous element to answer the same pointer without a second coordinate
-   system fighting the torch's section-relative one. */
+   system fighting the grid's section-relative one. */
 .hero-stat {
   transition:
     border-color 0.25s ease,
@@ -443,7 +475,7 @@ html.lenis-smooth {
 
 /*
   No fine hover means no spotlight: show the colour portrait outright and drop every
-  layer keyed to a moving cursor — the torch, the bright grid, and the glow it replaced.
+  layer keyed to a moving cursor.
 
   The query is the exact negation of HeroPortrait's own gate, `(hover: hover) and
   (pointer: fine)`. A bare `(hover: none)` missed devices that report hover with a coarse
@@ -454,7 +486,6 @@ html.lenis-smooth {
     filter: none;
   }
   .hero-portrait-colour,
-  .hero-torch,
   .sheet-grid-bright {
     display: none;
   }
@@ -562,7 +593,6 @@ html.lenis-smooth {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-portrait-colour,
-  .hero-torch,
   .sheet-grid-bright {
     transition: none;
   }
@@ -843,11 +873,7 @@ html[data-thread-open].lenis.lenis-stopped {
   transform: rotate(-38deg);
 }
 
-/*
-  The pin board: a dotted board with index cards hung on pushpins. Each card tilts by its
-  own --tilt about the pin; use-pin-swing animates the same transform on desktop and
-  removes it when the card is still again, so the CSS tilt is the rest pose.
-*/
+/* The pin board: a dotted board with index cards hung on pushpins, each at its own --tilt. */
 .pin-board {
   background-color: var(--color-surface);
   background-image: radial-gradient(var(--color-line) 1px, transparent 1.2px);
@@ -860,16 +886,6 @@ html[data-thread-open].lenis.lenis-stopped {
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 1px 0 rgba(0, 0, 0, 0.4),
     0 12px 24px -14px rgba(0, 0, 0, 0.9);
-}
-.pin-card-live {
-  cursor: grab;
-  user-select: none;
-}
-.pin-card-live.is-dragging {
-  cursor: grabbing;
-}
-.pin-card.is-swinging {
-  will-change: transform;
 }
 .pin-head {
   background: radial-gradient(circle at 35% 30%, #ffe0cc, var(--color-redline) 40%, #b0491c 100%);
@@ -1055,7 +1071,7 @@ html[data-thread-open].lenis.lenis-stopped {
 /*
   Sheet sketch (SheetSketch.tsx). The empty grid takes a pencil, so the pointer is a
   crosshair there; text keeps its I-beam and links their hand. The hint shows only
-  while the torch is lit, that is while the pointer is over the hero.
+  while the hero is lit, that is while the pointer is over it.
 */
 .hero-section.is-sketchable {
   cursor: crosshair;
