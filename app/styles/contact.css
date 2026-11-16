@@ -1,0 +1,53 @@
+/*
+  Contact form (components/sections/ContactForm.tsx). Only what utilities cannot express;
+  everything else is Tailwind on the elements.
+*/
+
+/*
+  Chrome paints autofilled inputs on a hard-coded pale background that ignores the field's
+  own colours, which drops a white bar onto the dark sheet. A huge inset shadow is the only
+  thing that can cover it, and the text and caret have to be put back by hand.
+*/
+.contact-form input:-webkit-autofill,
+.contact-form input:-webkit-autofill:hover,
+.contact-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-ground) inset;
+  caret-color: var(--color-ink);
+}
+
+/*
+  The honeypot. Laid out but off-screen rather than display:none or visibility:hidden,
+  because the bots worth catching skip fields that are not rendered. Pushed out to the left,
+  where overflow never creates a scrollbar; aria-hidden and tabIndex=-1 on the element keep
+  it away from screen readers and the keyboard.
+*/
+.contact-trap {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/*
+  The confirmation and the error box arrive with a short settle instead of a hard swap, so
+  the eye follows the change in place. Under the js-motion gate like every other movement on
+  the sheet: without JavaScript or with reduced motion they simply appear.
+*/
+.js-motion .contact-enter {
+  animation: contact-enter 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes contact-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-enter {
+    animation: none;
+  }
+}

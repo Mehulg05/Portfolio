@@ -1,11 +1,24 @@
 import { Reveal } from "@/components/animation/Reveal";
-import { ContactAirmail } from "@/components/sections/ContactAirmail";
+import {
+  ContactEmailNote,
+  needsScriptReason,
+  notConfiguredReason,
+} from "@/components/sections/ContactEmailNote";
+import { ContactForm } from "@/components/sections/ContactForm";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { isContactConfigured } from "@/lib/contact/config";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { profile } from "@/lib/content/profile";
 
 export function Contact() {
+  /*
+    Decided when the page renders. It is prerendered on the host, where env vars exist at
+    build time, so this reflects the deployment; the API answers 503 `unconfigured` as the
+    backstop if that ever drifts. Unconfigured, the form is not rendered at all.
+  */
+  const configured = isContactConfigured();
+
   return (
     <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
       <SectionHeader label="Contact" title="Let's build together" />
@@ -23,8 +36,28 @@ export function Contact() {
             make things. Send a note and I&apos;ll get back to you.
           </Reveal>
 
-          <Reveal className="mt-8">
-            <ContactAirmail />
+          <Reveal className="mt-8 border-t border-line pt-6">
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+              Send a message
+            </h3>
+            <div className="mt-5">
+              {configured ? (
+                <>
+                  <ContactForm email={profile.email} />
+                  {/*
+                    Sending needs JavaScript, so without it the form is hidden and the
+                    address takes its place. Inside <noscript> the style only applies
+                    when scripts are off; React leaves the block alone on hydration.
+                  */}
+                  <noscript>
+                    <style>{".contact-form{display:none}"}</style>
+                    <ContactEmailNote email={profile.email} reason={needsScriptReason} />
+                  </noscript>
+                </>
+              ) : (
+                <ContactEmailNote email={profile.email} reason={notConfiguredReason} />
+              )}
+            </div>
           </Reveal>
         </div>
 
