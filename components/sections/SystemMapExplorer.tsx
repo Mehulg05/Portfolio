@@ -11,56 +11,45 @@ import {
 } from "@/lib/content/skills";
 
 const filters: Array<{ depth: Depth; hint: string; tone: string; dot: string }> = [
-  { depth: "shipped", hint: "used in production at work", tone: "text-accent", dot: "bg-accent" },
+  { depth: "shipped", hint: "used in a system running in production", tone: "text-accent", dot: "bg-accent" },
   { depth: "academic", hint: "used in coursework or academic projects", tone: "text-ink", dot: "bg-ink-dim" },
   { depth: "research", hint: "used in the manuscript", tone: "text-redline", dot: "bg-redline" },
   { depth: "learning", hint: "studied, or in progress and not yet released", tone: "text-ink-dim", dot: "bg-line-bright" },
 ];
 
 const dotFor = Object.fromEntries(filters.map((item) => [item.depth, item.dot])) as Record<Depth, string>;
-const hintFor = Object.fromEntries(filters.map((item) => [item.depth, item.hint])) as Record<Depth, string>;
 
 const allSkills = [...pipeline.flatMap((stage) => stage.skills), ...intelligence.skills];
 
 /*
-  Compact on purpose: one line per skill, so the whole map fits on one screen when the nav
-  lands here. The note that used to sit under every skill now shows in the readout line
-  when a chip is hovered or focused, and stays in the chip as screen-reader text.
+  Plain list items, not buttons: a chip has nothing to activate, so it is no tab stop. Shipped
+  and research entries print their evidence inline, since that is the proof. Academic and
+  learning entries stay one line; their note is still there for screen readers. While a filter
+  is on, non-matching entries are dimmed and hidden from assistive technology.
 */
-function SkillChip({
-  skill,
-  dimmed,
-  onShow,
-}: {
-  skill: Skill;
-  dimmed: boolean;
-  onShow: (skill: Skill | null) => void;
-}) {
+function SkillChip({ skill, dimmed }: { skill: Skill; dimmed: boolean }) {
+  const showsEvidence = skill.depth === "shipped" || skill.depth === "research";
   return (
-    <li>
-      <button
-        type="button"
-        onMouseEnter={() => onShow(skill)}
-        onMouseLeave={() => onShow(null)}
-        onFocus={() => onShow(skill)}
-        onBlur={() => onShow(null)}
-        className={`flex w-full items-center gap-2 border border-transparent px-1.5 py-2.5 text-left text-[13px] sm:py-px leading-5 text-ink transition-opacity duration-300 hover:border-line-bright focus-visible:border-accent ${
-          dimmed ? "opacity-25" : ""
-        }`}
-      >
+    <li
+      aria-hidden={dimmed || undefined}
+      className={`px-1.5 py-1.5 text-[13px] leading-5 text-ink transition-opacity duration-300 ${dimmed ? "opacity-25" : ""}`}
+    >
+      <span className="flex items-center gap-2">
         <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 ${dotFor[skill.depth]}`} />
         <span>{skill.name}</span>
-        <span className="sr-only">
-          , {depthLabels[skill.depth]}. {skill.note}
-        </span>
-      </button>
+        <span className="sr-only">, {depthLabels[skill.depth]}.</span>
+      </span>
+      <span
+        className={showsEvidence ? "mt-0.5 block pl-3.5 text-[12px] leading-snug text-ink-faint" : "sr-only"}
+      >
+        {skill.note}
+      </span>
     </li>
   );
 }
 
 export function SystemMapExplorer() {
   const [filter, setFilter] = useState<Depth | null>(null);
-  const [shown, setShown] = useState<Skill | null>(null);
 
   const isDimmed = (skill: Skill) => filter !== null && skill.depth !== filter;
   const matching = filter ? allSkills.filter((s) => s.depth === filter).length : allSkills.length;
@@ -77,7 +66,6 @@ export function SystemMapExplorer() {
                 key={item.depth}
                 type="button"
                 aria-pressed={isActive}
-                title={item.hint}
                 onClick={() => setFilter(isActive ? null : item.depth)}
                 className={`flex min-h-11 items-center gap-2 border px-3 py-1.5 label-mono sm:min-h-0 ${
                   isActive
@@ -93,31 +81,15 @@ export function SystemMapExplorer() {
           })}
         </div>
 
-        <p className="label-mono text-ink-faint tabular-nums">
+        <p role="status" className="label-mono text-ink-faint tabular-nums">
           {filter ? `${matching} of ${allSkills.length} shown` : `${allSkills.length} entries`}
         </p>
       </Reveal>
 
-      {/* Readout above the map: a fixed-height line, so hovering never moves the page. */}
-      <div
-        aria-hidden="true"
-        className="mt-3 flex min-h-20 flex-wrap content-center items-center gap-x-3 gap-y-0.5 border border-accent/40 border-l-2 border-l-accent bg-accent-deep/25 px-4 py-2 text-[14px] leading-snug text-ink sm:min-h-10 sm:flex-nowrap"
-      >
-        {shown ? (
-          <>
-            <span className="label-mono text-accent sm:shrink-0">
-              {shown.name}
-            </span>
-            <span className="hidden text-ink-faint sm:inline">·</span>
-            <span className="text-ink">{shown.note}</span>
-          </>
-        ) : (
-          <span className="text-ink-dim">
-            Hover or focus a skill to see where I used it.
-            {filter ? ` Showing ${depthLabels[filter].toLowerCase()}: ${hintFor[filter]}.` : ""}
-          </span>
-        )}
-      </div>
+      <p className="mt-3 text-[14px] leading-snug text-ink-dim">
+        Shipped and research entries say where I used the skill.
+        {filter ? ` Showing ${depthLabels[filter].toLowerCase()}: ${filters.find((f) => f.depth === filter)?.hint}.` : ""}
+      </p>
       {/* Pipeline stages */}
       <div className="mt-3 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
         {pipeline.map((stage, i) => (
@@ -128,7 +100,7 @@ export function SystemMapExplorer() {
             <p className="mt-0.5 text-[12px] leading-snug text-ink-faint">{stage.caption}</p>
             <ul className="mt-1.5 flex flex-col">
               {stage.skills.map((skill) => (
-                <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} onShow={setShown} />
+                <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} />
               ))}
             </ul>
           </Reveal>
@@ -145,7 +117,7 @@ export function SystemMapExplorer() {
         </div>
         <ul className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {intelligence.skills.map((skill) => (
-            <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} onShow={setShown} />
+            <SkillChip key={skill.name} skill={skill} dimmed={isDimmed(skill)} />
           ))}
         </ul>
       </Reveal>
