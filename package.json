@@ -10,7 +10,8 @@
     "db:dev": "node scripts/db-dev.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:inspect": "node scripts/db-inspect.mjs",
-    "test": "node --test --experimental-strip-types 'lib/contact/*.test.mjs'"
+    "db:prune": "node scripts/db-prune.mjs",
+    "test": "node --test --experimental-strip-types 'lib/**/*.test.mjs'"
   },
   "dependencies": {
     "lenis": "^1.3.26",
