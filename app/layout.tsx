@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/animation/SmoothScroll";
+import { Pulse } from "@/components/analytics/Pulse";
 import { InkDefs } from "@/components/ui/Ink";
 import { meta, profile } from "@/lib/content/profile";
 import { siteUrl } from "@/lib/site";
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <SmoothScroll />
+        <Pulse />
         <InkDefs />
         <a
           href="#top"
