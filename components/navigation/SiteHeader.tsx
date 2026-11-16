@@ -14,6 +14,7 @@ const READ_LINE = 0.35;
 export function SiteHeader() {
   const [activeId, setActiveId] = useState<string>(sections[0].id);
   const headerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
@@ -104,6 +105,27 @@ export function SiteHeader() {
     };
   }, []);
 
+  /*
+    Below lg the nav is a row that scrolls sideways. Keep the current section's link in
+    that row's view, or a phone visitor reading Research sees only "Experience · Client
+    Work" with nothing highlighted.
+  */
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    const link = nav.querySelector<HTMLElement>(`a[href="#${activeId}"]`);
+    if (!link) return;
+    // Measured against the row itself: the link's offsetParent is the sticky header.
+    const row = nav.getBoundingClientRect();
+    const box = link.getBoundingClientRect();
+    if (box.left >= row.left && box.right <= row.right) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    nav.scrollTo({
+      left: nav.scrollLeft + box.left - row.left - 8,
+      behavior: reduced ? "auto" : "smooth",
+    });
+  }, [activeId]);
+
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-1.5 sm:px-8 lg:gap-6 lg:py-3">
@@ -114,6 +136,7 @@ export function SiteHeader() {
           reads as "scroll for more" rather than the end of the menu.
         */}
         <nav
+          ref={navRef}
           aria-label="Sections"
           className="nav-scroll -ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
         >
