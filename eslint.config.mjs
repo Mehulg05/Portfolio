@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent worktrees and the local PGlite data directory hold copies of the repo.
+    ".claude/**",
+    ".pglite/**",
   ]),
 ]);
 

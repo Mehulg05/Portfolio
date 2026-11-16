@@ -1,10 +1,12 @@
 @import "tailwindcss";
 @import "./styles/client-work.css";
+@import "./styles/hero.css";
+@import "./styles/idcard.css";
+@import "./styles/ink.css";
 @import "./styles/contact.css";
 
 /*
   THE BUILD LOG — Schematic visual system
-  Phase 1: static build. No animation beyond instant hover feedback.
   Committed single dark theme (see color-scheme below) — deliberate, not an omission.
 */
 
@@ -41,8 +43,13 @@ html {
   scrollbar-gutter: stable;
 }
 
+/*
+  Smooth only once the page has loaded (the head script in layout.tsx adds `smooth`), so
+  a cold deep link such as /#education lands at once instead of gliding ~9000px, while
+  nav clicks afterwards still ease.
+*/
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  html.smooth {
     scroll-behavior: smooth;
   }
 }
@@ -59,9 +66,15 @@ body {
   color: var(--color-ground);
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+/*
+  In @layer base so Tailwind's `focus-visible:` utilities (layer utilities) can override
+  the default ring. Unlayered, this rule beat every one of them regardless of specificity.
+*/
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
 }
 
 /*
@@ -145,49 +158,18 @@ section[id] {
   opacity: 0;
   transform: translateY(14px);
 }
+/* Focus must never land on content that is still invisible. */
+.js-motion .reveal:focus-within {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
 .js-motion .reveal.is-revealed {
   opacity: 1;
   transform: none;
   transition:
     opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
     transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-/*
-  Timeline ID card. Two half-turns: `out` takes the card edge-on, the face swaps on
-  animationend (JS), `in` brings the new face round. Two cards are never visible.
-*/
-@keyframes idcard-out-forward {
-  to {
-    transform: rotateY(90deg);
-  }
-}
-@keyframes idcard-in-forward {
-  from {
-    transform: rotateY(-90deg);
-  }
-}
-@keyframes idcard-out-back {
-  to {
-    transform: rotateY(-90deg);
-  }
-}
-@keyframes idcard-in-back {
-  from {
-    transform: rotateY(90deg);
-  }
-}
-.idcard-out-forward {
-  animation: idcard-out-forward 0.23s cubic-bezier(0.4, 0, 1, 1) both;
-}
-.idcard-in-forward {
-  animation: idcard-in-forward 0.23s cubic-bezier(0, 0, 0.2, 1) both;
-}
-.idcard-out-back {
-  animation: idcard-out-back 0.23s cubic-bezier(0.4, 0, 1, 1) both;
-}
-.idcard-in-back {
-  animation: idcard-in-back 0.23s cubic-bezier(0, 0, 0.2, 1) both;
 }
 
 /* Hero load sequence — pure CSS, no JS dependency. */
@@ -341,278 +323,6 @@ section[id] {
   }
 }
 
-/*
-  Hero identity stage. Two columns: the name sits top-left, the role cycle sits under
-  it against the foot of the portrait, and the portrait holds the right column across
-  both rows. Below `lg` the grid collapses and the three stack in source order.
-*/
-/* The hero has no section padding: #top (the skip link, the logo position) is scrollY 0. */
-#top {
-  scroll-margin-top: var(--header-h);
-}
-
-.hero-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  /* Sized off the viewport rather than the column so the two lines stay one block. */
-  font-size: clamp(3rem, 9.5vw, 5.75rem);
-  line-height: 0.86;
-  letter-spacing: -0.035em;
-  color: var(--color-ink);
-  text-wrap: balance;
-}
-.hero-name span {
-  display: block;
-}
-.hero-name span:last-child {
-  color: var(--color-line-bright);
-}
-
-/*
-  Role cycle. Every role sits in the same box and takes its turn, so the block never
-  changes height. Pure CSS — it runs with JavaScript disabled, and the reduced-motion
-  block below turns it into a plain wrapped list rather than freezing on one entry.
-
-  Each item is on screen for one slot of the cycle; `--i` staggers the start. The
-  `role-cycle` keyframes are generated in Hero.tsx from the number of roles, because a
-  keyframe selector cannot take a variable — and hard-coded stops only fit one count.
-*/
-.hero-roles {
-  position: relative;
-  min-height: 1.55em;
-}
-.role-slot {
-  position: absolute;
-  inset: 0 auto auto 0;
-  white-space: nowrap;
-  opacity: 0;
-  animation: role-cycle var(--role-cycle) infinite;
-  animation-delay: calc(var(--i) * (var(--role-cycle) / var(--role-count)));
-}
-
-/*
-  Greyscale underneath, colour on top behind a circular mask that follows the cursor.
-  --mx/--my are written by HeroPortrait; parked off-canvas so nothing shows before the
-  first pointer event.
-*/
-.hero-portrait {
-  --mx: -999px;
-  --my: -999px;
-  --spot-r: 96px;
-}
-@media (min-width: 640px) {
-  .hero-portrait {
-    --spot-r: 120px;
-  }
-}
-@media (min-width: 1024px) {
-  .hero-portrait {
-    --spot-r: 140px;
-  }
-}
-
-.hero-portrait-base {
-  filter: grayscale(1) contrast(1.04);
-}
-.hero-portrait-colour {
-  opacity: 0;
-  transition: opacity 0.28s ease;
-  -webkit-mask-image: radial-gradient(
-    circle var(--spot-r) at var(--mx) var(--my),
-    #000 0%,
-    #000 55%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    circle var(--spot-r) at var(--mx) var(--my),
-    #000 0%,
-    #000 55%,
-    transparent 100%
-  );
-}
-.hero-section.is-lit .hero-portrait-colour {
-  opacity: 1;
-}
-
-/*
-  Bright grid — a second copy of the schematic grid, in accent, revealed only in a small
-  radius around the pointer (--gx/--gy, written by HeroPortrait's rAF loop). It is the one
-  ambient answer to the cursor, and it tells the visitor the sheet is live before the
-  sketch hint does. Deliberately the only one: a second cursor-follower reads as a
-  custom cursor.
-*/
-.sheet-grid-bright {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px);
-  background-size: 72px 72px;
-  background-position: center top;
-  -webkit-mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
-  mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
-}
-.hero-section.is-lit .sheet-grid-bright {
-  opacity: 1;
-}
-
-/* The corner stamp cells brighten under a direct hover — the simplest honest way for a
-   discrete, non-continuous element to answer the same pointer without a second coordinate
-   system fighting the grid's section-relative one. */
-.hero-stat {
-  transition:
-    border-color 0.25s ease,
-    background-color 0.25s ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .hero-stat:hover {
-    border-color: var(--color-accent);
-    background-color: var(--color-surface);
-  }
-}
-
-/*
-  No fine hover means no spotlight: show the colour portrait outright and drop every
-  layer keyed to a moving cursor.
-
-  The query is the exact negation of HeroPortrait's own gate, `(hover: hover) and
-  (pointer: fine)`. A bare `(hover: none)` missed devices that report hover with a coarse
-  pointer: they got no spotlight and no colour either, just a greyscale portrait.
-*/
-@media (hover: none), (pointer: coarse), (pointer: none) {
-  .hero-portrait-base {
-    filter: none;
-  }
-  .hero-portrait-colour,
-  .sheet-grid-bright {
-    display: none;
-  }
-}
-
-/*
-  Scan-in. Without a spotlight there is nothing to discover, so the portrait gets one
-  moment of its own: it waits greyscale, then a scanline sweeps it into colour.
-
-  The sweep starts when HeroPortrait sets data-scan, which it does once the image has
-  actually loaded, so a slow connection never sees the line cross an empty box. Until
-  then `js-motion` holds the base greyscale; with no JavaScript there is no js-motion
-  and the portrait is simply in colour, as before. data-scan="skip" (a stalled image)
-  releases the hold without animating.
-
-  --scan is registered so the mask interpolates. The line has its own `top` keyframes,
-  so without @property the mask jumps at the end but the line still sweeps. On the last
-  frame the colour copy is hidden (steps(1, jump-end) holds each "from" value until
-  then), so the settled portrait is exactly the colour-outright version above.
-*/
-@property --scan {
-  syntax: "<percentage>";
-  inherits: true;
-  initial-value: 0%;
-}
-@media (prefers-reduced-motion: no-preference) {
-  @media (hover: none), (pointer: coarse), (pointer: none) {
-    .js-motion .hero-portrait:not([data-scan]) .hero-portrait-base {
-      filter: grayscale(1) contrast(1.04);
-    }
-    .js-motion .hero-portrait[data-scan="run"] {
-      --scan-delay: 0.15s;
-      --scan-time: 1.6s;
-      --scan-ease: cubic-bezier(0.65, 0, 0.35, 1);
-      animation: scan-in var(--scan-time) var(--scan-ease) var(--scan-delay) both;
-    }
-    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-base {
-      animation: scan-grey var(--scan-time) steps(1, jump-end) var(--scan-delay) backwards;
-    }
-    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-colour {
-      display: block;
-      visibility: hidden;
-      pointer-events: none;
-      opacity: 1;
-      transition: none;
-      animation: scan-cover var(--scan-time) steps(1, jump-end) var(--scan-delay) both;
-      -webkit-mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
-      mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
-    }
-    .js-motion .hero-portrait[data-scan="run"]::after {
-      content: "";
-      position: absolute;
-      inset-inline: 0;
-      top: 0;
-      height: 1px;
-      background: var(--color-accent);
-      box-shadow: 0 0 12px var(--color-accent);
-      opacity: 0;
-      pointer-events: none;
-      animation:
-        scan-line var(--scan-time) linear var(--scan-delay) both,
-        scan-line-move var(--scan-time) var(--scan-ease) var(--scan-delay) both;
-    }
-  }
-}
-@keyframes scan-in {
-  from {
-    --scan: 0%;
-  }
-  to {
-    --scan: 108%;
-  }
-}
-@keyframes scan-grey {
-  from {
-    filter: grayscale(1) contrast(1.04);
-  }
-}
-/* Visible through the sweep, hidden (and so never hit-tested) from the last frame on. */
-@keyframes scan-cover {
-  from {
-    visibility: visible;
-  }
-}
-@keyframes scan-line {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  8%,
-  88% {
-    opacity: 1;
-  }
-}
-/* Tracks the mask edge, which ends at 108% of the height, held at the bottom edge. */
-@keyframes scan-line-move {
-  from {
-    top: 0%;
-  }
-  92.6%,
-  to {
-    top: 100%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-portrait-colour,
-  .sheet-grid-bright {
-    transition: none;
-  }
-  /* No cycling — every role is shown at once, as a plain list. */
-  .hero-roles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.1rem;
-    min-height: 0;
-  }
-  .role-slot {
-    position: static;
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
-}
-
 /* Schematic sheet grid — the one ambient texture on the page. */
 .sheet-grid {
   background-image:
@@ -646,16 +356,6 @@ section[id] {
 }
 
 /* Connector rules between diagram stages. */
-.connector-h {
-  background-image: linear-gradient(
-    to right,
-    var(--color-line-bright) 0 6px,
-    transparent 6px 10px
-  );
-  background-size: 10px 1px;
-  background-repeat: repeat-x;
-  background-position: center;
-}
 .connector-v {
   background-image: linear-gradient(
     to bottom,
@@ -668,426 +368,62 @@ section[id] {
 }
 
 /*
-  Contact dialog — the form the contact line opens into.
-
-  A native <dialog>, so the focus trap, Esc and the top layer come from the platform.
-  What the UA sheet gets wrong is the look: <dialog> ships a light canvas, a groove
-  border and 1em of padding, which would drop a white box onto a near-black sheet. All
-  three are cleared here and the panel inside supplies the surface instead.
+  Phone nav: the row of section links scrolls sideways. Both edges fade while more links
+  sit past them: the right one lifts at the end of the row so the last link is never dim,
+  the left one appears once the row has moved. Desktop shows every link, so no mask there.
+  Without scroll-driven animation only the right fade is drawn.
 */
-.thread-dialog {
-  margin: auto;
-  width: 100%;
-  max-width: min(34rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
-  /* 1px of headroom so the tick-frame corner marks, which sit at top:-1px, survive the
-     overflow clip that the max-height above introduces. */
-  padding: 1px 0 0;
-  border: 0;
-  overflow: hidden auto;
-  background: transparent;
-  color: var(--color-ink);
-
-  opacity: 0;
-  transform: translateY(10px) scale(0.985);
-  transition:
-    opacity 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
-    overlay 0.28s allow-discrete,
-    display 0.28s allow-discrete;
+@property --nav-fade-l {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
 }
-.thread-dialog[open] {
-  opacity: 1;
-  transform: none;
+@property --nav-fade-r {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 2.75rem;
 }
-/* The open state is also the from-state, so the panel rises in rather than appearing. */
-@starting-style {
-  .thread-dialog[open] {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
-  }
-}
-
-/*
-  The page does not get hidden behind a flat scrim — it is dimmed and thrown out of
-  focus, so the sheet is still legible underneath and the dialog reads as a layer on
-  the same drawing rather than a different screen.
-*/
-.thread-dialog::backdrop {
-  background: color-mix(in srgb, #05070a 82%, transparent);
-  -webkit-backdrop-filter: blur(5px) saturate(0.85);
-  backdrop-filter: blur(5px) saturate(0.85);
-  opacity: 0;
-  transition:
-    opacity 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
-    overlay 0.28s allow-discrete,
-    display 0.28s allow-discrete;
-}
-.thread-dialog[open]::backdrop {
-  opacity: 1;
-}
-@starting-style {
-  .thread-dialog[open]::backdrop {
-    opacity: 0;
-  }
-}
-
-/*
-  Chrome paints autofilled inputs on a hard-coded pale background that ignores every
-  colour above. The inset shadow is the only way to take it back.
-*/
-.thread-dialog input:-webkit-autofill,
-.thread-dialog input:-webkit-autofill:hover,
-.thread-dialog input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--color-ink);
-  box-shadow: 0 0 0 1000px var(--color-ground) inset;
-  caret-color: var(--color-ink);
-}
-
-/*
-  A modal <dialog> blocks clicks behind it but not the wheel, so the page has to be
-  pinned. `hidden` rather than `clip` because only a scroll container keeps the
-  scrollbar gutter reserved — with `clip` the gutter collapses and the whole page jumps
-  sideways the moment the dialog opens.
-
-  The second selector outranks Lenis's own `.lenis:not(.lenis-autoToggle).lenis-stopped`
-  rule, which sets `overflow: clip` as soon as the dialog calls stop().
-*/
-html[data-thread-open],
-html[data-thread-open].lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .thread-dialog,
-  .thread-dialog::backdrop {
-    transition: none;
-  }
-}
-
-/*
-  Contact toy — the envelope slingshot in the contact section (ContactAirmail.tsx).
-
-  Flight is driven by JavaScript; these are only the two idle flourishes, and the
-  component applies them after it has confirmed motion is allowed.
-*/
-@keyframes env-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-.env-bob {
-  animation: env-bob 2.6s ease-in-out infinite;
-}
-
-@keyframes tray-badge-pop {
-  0% { transform: scale(0); }
-  70% { transform: scale(1.35); }
-  100% { transform: scale(1); }
-}
-.tray-badge-pop {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: tray-badge-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/*
-  Ink. Rubber stamps (Stamp.tsx) and pen strokes (PipelineSketch.tsx) both go through
-  the SVG filters in Ink.tsx. A stamp is a double-ruled box set a little off square;
-  inside a Reveal it waits, then comes down when the Reveal fires. `stamp-now` stamps
-  on mount, for things that appear mid-interaction like the postmark.
-*/
-.stamp {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 1.5px solid currentColor;
-  outline: 1px solid currentColor;
-  outline-offset: 2px;
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  line-height: 1.4;
-  transform: rotate(var(--stamp-rot, -2.5deg));
-  filter: url(#ink-stamp);
-}
-.js-motion .reveal:not(.is-revealed) .stamp {
-  opacity: 0;
-}
-.js-motion .reveal.is-revealed .stamp,
-.js-motion .stamp-now {
-  animation: stamp-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
-}
-@keyframes stamp-in {
-  0% {
-    opacity: 0;
-    transform: rotate(var(--stamp-rot, -2.5deg)) scale(1.7);
-  }
-  55% {
-    opacity: 1;
-    transform: rotate(var(--stamp-rot, -2.5deg)) scale(0.94);
-  }
-  100% {
-    opacity: 1;
-    transform: rotate(var(--stamp-rot, -2.5deg)) scale(1);
-  }
-}
-.postmark {
-  transform-box: fill-box;
-  transform-origin: center;
-  --stamp-rot: -8deg;
-}
-@media (prefers-reduced-motion: reduce) {
-  .stamp,
-  .stamp-now,
-  .postmark {
-    animation: none;
-    opacity: 1;
-  }
-}
-
-/*
-  The manuscript: two pages under the research card, each a little further out and a
-  touch off square, and a staple through the corner of the top one.
-*/
-.manuscript-page {
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  transform-origin: 50% 100%;
-  pointer-events: none;
-}
-.manuscript-page-1 {
-  transform: translate(3px, 4px) rotate(0.35deg);
-}
-.manuscript-page-2 {
-  transform: translate(6px, 8px) rotate(-0.45deg);
-  opacity: 0.75;
-}
-.manuscript-staple {
-  width: 22px;
-  height: 4px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, #6b7480, #e6eaef 25%, #9aa3ae 50%, #f2f4f7 75%, #5f6874);
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.35);
-  transform: rotate(-38deg);
-}
-
-/* The pin board: a dotted board with index cards hung on pushpins, each at its own --tilt. */
-.pin-board {
-  background-color: var(--color-surface);
-  background-image: radial-gradient(var(--color-line) 1px, transparent 1.2px);
-  background-size: 14px 14px;
-}
-.pin-card {
-  transform-origin: 50% 9px;
-  transform: rotate(var(--tilt, 0deg));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 1px 0 rgba(0, 0, 0, 0.4),
-    0 12px 24px -14px rgba(0, 0, 0, 0.9);
-}
-.pin-head {
-  background: radial-gradient(circle at 35% 30%, #ffe0cc, var(--color-redline) 40%, #b0491c 100%);
-  box-shadow:
-    0 1.5px 2px rgba(0, 0, 0, 0.75),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.3);
-}
-.pin-needle {
-  background: linear-gradient(180deg, #c9d0d8, #7a8391);
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.6);
-}
-
-/* The tray takes the hit: a short dip and rock when a letter lands in it. */
-@keyframes tray-jolt {
-  0% { transform: translateY(0) rotate(0); }
-  25% { transform: translateY(2.5px) rotate(-0.8deg); }
-  55% { transform: translateY(-1px) rotate(0.5deg); }
-  80% { transform: translateY(0.5px) rotate(-0.2deg); }
-  100% { transform: translateY(0) rotate(0); }
-}
-.tray-jolt {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: tray-jolt 420ms ease-out both;
-}
-
-/* Where the shot will land: accent when it is the inbox, redline when it is the floor. */
-.landing-marker {
-  stroke: var(--color-redline);
-}
-.landing-marker[data-hit="yes"] {
-  stroke: var(--color-accent);
-}
-
-@keyframes miss-panel-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.miss-panel {
-  animation: miss-panel-in 220ms ease-out both;
-}
-
-/*
-  Phone nav: the row of section links scrolls sideways. A fade at the right edge says
-  there is more past the cut, and it lifts once the row is scrolled to its end so the
-  last link is never left dim. Desktop shows every link, so no mask there.
-*/
 @media (max-width: 1023px) {
   .nav-scroll {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--nav-fade-l),
+      #000 calc(100% - var(--nav-fade-r)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--nav-fade-l),
+      #000 calc(100% - var(--nav-fade-r)),
+      transparent
+    );
   }
   @supports (animation-timeline: scroll(self inline)) {
     .nav-scroll {
-      animation: nav-unmask linear both;
+      animation: nav-fade linear both;
       animation-timeline: scroll(self inline);
     }
-    @keyframes nav-unmask {
-      0%,
+    @keyframes nav-fade {
+      0% {
+        --nav-fade-l: 0px;
+        --nav-fade-r: 2.75rem;
+      }
+      8%,
       92% {
-        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
-        mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+        --nav-fade-l: 2.5rem;
+        --nav-fade-r: 2.75rem;
       }
       100% {
-        -webkit-mask-image: none;
-        mask-image: none;
+        --nav-fade-l: 2.5rem;
+        --nav-fade-r: 0px;
       }
     }
   }
 }
 
-/* The hanging card can be grabbed on desktop; the cursor says so. */
-.idcard-grab {
-  cursor: grab;
-  touch-action: none;
-}
-.idcard-grab.is-dragging {
-  cursor: grabbing;
-}
-
-/*
-  PVC card inside the holder: a bright edge where the light catches the card's
-  thickness, a hairline under it, and only a tight shadow, since it sits in a pouch.
-*/
-.idcard-plastic {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 1px 2px rgba(0, 0, 0, 0.4);
-}
-/*
-  Clear vinyl badge holder. The back is the pouch: a faint milky tint, a bright cut
-  edge, a welded seam a few px in, and the drop shadow for the whole thing. The front is
-  what sits over the card: a slight haze from the plastic, a band of reflection that the
-  sim slides across with --sheen (50% is straight on), and a top-down sheen that stays.
-*/
-.idcard-holder-back {
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.11),
-    rgba(255, 255, 255, 0.05) 45%,
-    rgba(255, 255, 255, 0.08)
-  );
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.05),
-    0 1px 0 rgba(0, 0, 0, 0.5),
-    0 22px 44px -20px rgba(0, 0, 0, 0.85);
-}
-.idcard-holder-back::after {
-  content: "";
-  position: absolute;
-  inset: 3.5px;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  pointer-events: none;
-}
-.idcard-holder-front {
-  background-image:
-    linear-gradient(
-      108deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0) 38%,
-      rgba(255, 255, 255, 0.2) 46%,
-      rgba(255, 255, 255, 0.07) 52%,
-      rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0) 100%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 30%),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 20%),
-    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045));
-  background-size:
-    300% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%;
-  background-position:
-    var(--sheen, 50%) 0,
-    0 0,
-    0 0,
-    0 0;
-  background-repeat: no-repeat;
-}
-/* The punched slot: a dark hole with a lit lower lip. */
-.idcard-slot {
-  box-shadow:
-    inset 0 1px 1.5px rgba(0, 0, 0, 0.9),
-    0 1px 0 rgba(255, 255, 255, 0.45);
-}
-/* Fittings for the still card below lg, in CSS where the hanging one uses SVG. */
-.idcard-strap-stub {
-  background:
-    repeating-linear-gradient(45deg, #3a5490 0 2px, #2c4374 2px 4px);
-  box-shadow:
-    inset 1.5px 0 0 rgba(255, 255, 255, 0.28),
-    inset -1.5px 0 0 rgba(255, 255, 255, 0.28);
-}
-.idcard-crimp {
-  background: linear-gradient(90deg, #6b7480, #e6eaef 25%, #9aa3ae 50%, #f2f4f7 75%, #5f6874);
-  box-shadow:
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.55),
-    inset 0 3px 0 -2.2px rgba(0, 0, 0, 0.35);
-}
-.idcard-ring {
-  border: 2.2px solid transparent;
-  background:
-    linear-gradient(90deg, #6b7480, #e6eaef 25%, #9aa3ae 50%, #f2f4f7 75%, #5f6874) border-box;
-  -webkit-mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  filter: drop-shadow(0 0.5px 0.5px rgba(0, 0, 0, 0.6));
-  z-index: 1;
-}
-
-
-/*
-  Sheet sketch (SheetSketch.tsx). The empty grid takes a pencil, so the pointer is a
-  crosshair there; text keeps its I-beam and links their hand. The hint shows only
-  while the hero is lit, that is while the pointer is over it.
-*/
-.hero-section.is-sketchable {
-  cursor: crosshair;
-}
-.hero-section.is-sketchable :is(p, h1, dl, dt, dd) {
-  cursor: auto;
-}
-.hero-section.is-sketchable :is(a, button) {
-  cursor: pointer;
-}
-.sketch-hint {
-  opacity: 0;
-  transition: opacity 0.5s ease 0.6s;
-}
-.hero-section.is-lit .sketch-hint {
-  opacity: 1;
+/* Sections take focus from a nav link (SiteHeader) so Tab continues from there; no ring on a whole section. */
+section[id]:focus {
+  outline: none;
 }
