@@ -24,7 +24,7 @@
 
 **Cron.** `vercel.json` schedules `GET /api/cron` daily (Hobby allows one). It prunes page views older than 90 days and old sign-in attempts, and retries pending email notifications. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically. `CRON_SECRET` must be 32+ characters; a shorter or missing one makes the route answer 401 like a wrong one. Retention periods live in `lib/db/retention.ts`.
 
-**Headers.** Every admin response carries a strict CSP with a per-request nonce, `frame-ancestors 'none'`, `no-store` and `Referrer-Policy: no-referrer` (see `docs/contact-backend.md`, Security headers).
+**Headers.** Every admin response carries a strict CSP with a per-request nonce, `frame-ancestors 'none'`, `no-store` and `Referrer-Policy: same-origin` (see `docs/contact-backend.md`, Security headers).
 
 **Admin DNS.** If a CNAME for `admin` exists at the DNS provider but the domain is not added to the Vercel project, remove the CNAME or add the domain: a dangling record to a hosted platform is the shape of a subdomain takeover.
 

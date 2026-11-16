@@ -46,7 +46,8 @@ function rewriteToAdmin(request: NextRequest) {
         request: { headers },
       });
   response.headers.set("X-Robots-Tag", noindex);
-  response.headers.set("Referrer-Policy", "no-referrer");
+  // no-referrer also turns the Origin of native form POSTs into "null".
+  response.headers.set("Referrer-Policy", "same-origin");
   response.headers.set("Cache-Control", "no-store");
   if (enforceCsp) response.headers.set("Content-Security-Policy", csp);
   return response;
