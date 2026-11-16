@@ -3,11 +3,11 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export function SystemMap() {
   return (
-    <section id="system-map" className="sheet-section">
+    <section id="system-map" aria-label="Skills" className="sheet-section">
       <SectionHeader
         label="Skills"
-        title="Skills, and where I used them"
-        caption="Each skill is labelled by how far I have taken it. Shipped means used in production at work."
+        title="Where I used each skill"
+        caption="Each skill is labelled by how far I have taken it. Shipped means it runs in production, at Sahayogi One or at Alpha Academy."
       />
 
       <SystemMapExplorer />

@@ -27,7 +27,7 @@ const decisionRows = [
 
 export function ClientWork() {
   return (
-    <section id="client-work" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+    <section id="client-work" aria-label={`Client work: ${clientWork.client}`} className="sheet-section">
       <SectionHeader label="Client Work" title={clientWork.client} caption={clientWork.summary} />
 
       {/* The brief: live status, who it's for, what I own, and four counts from the codebase. */}
@@ -97,11 +97,6 @@ export function ClientWork() {
               {clientWork.stack.map((item) => (
                 <Tag key={item}>{item}</Tag>
               ))}
-            </div>
-            <div className="mt-auto pt-6">
-              <LinkButton href={clientWork.href} context={`${clientWork.client}, live site`}>
-                Live site
-              </LinkButton>
             </div>
           </div>
         </Reveal>

@@ -6,10 +6,10 @@ import { roles } from "@/lib/content/experience";
 
 export function Experience() {
   return (
-    <section id="experience" className="sheet-section">
+    <section id="experience" aria-label="Experience" className="sheet-section">
       <SectionHeader
         label="Experience"
-        title="Experience"
+        title="What I built at work"
         caption="Most recent first. Source code belongs to the employers and is not public."
       />
 
