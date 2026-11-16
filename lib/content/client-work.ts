@@ -27,12 +27,17 @@ export const clientWork = {
   ownership:
     "I designed, built and deployed all of it alone, and I run it: the Next.js site and portal, the Fastify API, the Postgres schema, auth, file storage and the Render deployment.",
 
-  /* Counted in the codebase. */
+  /*
+    Counted in the codebase.
+    [CONFIRM] M2: no usage evidence is shown yet. Once Mehul gives one real figure (active
+    accounts, months in production or records written), it replaces the weakest tile here.
+    Never invent one.
+  */
   facts: [
     { value: 6, label: "roles", note: "one login" },
     { value: 16, label: "permissions", note: "one RBAC matrix" },
     { value: 31, label: "Postgres tables", note: "13 migrations" },
-    { value: 43, label: "integration test files", note: "run against Postgres in PGlite" },
+    { value: 43, label: "Vitest test files", note: "API tests run against Postgres in PGlite" },
   ],
 
   walkthroughNote:
@@ -43,7 +48,7 @@ export const clientWork = {
     { label: "Fastify API", note: "Node 22 · zod on every body and query" },
     { label: "Auth + RBAC + scope", note: "role → permission → which rows" },
     { label: "Postgres on Neon", note: "Drizzle ORM · audit in the same tx" },
-    { label: "S3-compatible storage", note: "private bucket · 60 s signed links" },
+    { label: "S3-compatible storage", note: "private bucket · short-lived signed links" },
   ],
 
   /* Ordered by how much each one shows; the first three are the ones to remember. */
@@ -77,7 +82,7 @@ export const clientWork = {
       title: "Private files, short-lived links",
       problem: "Homework PDFs and report cards sit in a private bucket, so no storage key or lasting URL should reach the browser.",
       choice:
-        "Uploads go to S3-compatible storage through aws4fetch under random keys that are stripped from API responses, and downloads are 60-second presigned URLs issued after a scope check.",
+        "Uploads go to S3-compatible storage through aws4fetch under random keys that are stripped from API responses, and downloads are short-lived presigned URLs issued after a scope check: 60 seconds for homework and library files, 5 minutes for report cards.",
       consequence: "A copied link stops working on its own, and inline views stream with a sandbox CSP, nosniff and no-store, with pdf.js loaded only when a file opens.",
       ref: "api/src/lib/{storage,attachments}.ts",
     },
@@ -92,7 +97,7 @@ export const clientWork = {
     {
       title: "Tested against a real Postgres",
       problem: "Permission and scoping rules are only proven when the routes run against the real schema.",
-      choice: "43 Vitest integration files run every route against a migrated database in PGlite (Postgres compiled to WebAssembly).",
+      choice: "43 Vitest files: unit tests for the rules and maths, and integration tests that run the API routes against a migrated database in PGlite (Postgres compiled to WebAssembly).",
       consequence:
         "RBAC, scoping, session security, rate limits and file views are covered at the API, and Playwright with axe covers the public site's routes, SEO, forms and accessibility.",
       ref: "api/test · qa/tests",
@@ -101,14 +106,13 @@ export const clientWork = {
 
   /* Rendered under "What I'd do differently". [CONFIRM] see report: every "I'd" here is Mehul's opinion to confirm. */
   hindsight: [
-    "The static export needs a post-build script (flatten-segments.mjs) because Next 16 writes route-segment files nested and the router asks for them flat. I'd test client-side navigation on the static host before committing to an export, not after.",
+    "The static export needs a post-build script to make client-side navigation work (see the Website walkthrough). I'd test navigation on the static host before committing to an export, not after.",
     "Render deploys stall often enough that a watchdog script cancels and retries them. I'd treat that script as a sign the deploy path needs fixing, not as the fix.",
   ],
 
   ops: [
     "Render Blueprint: a static site and a Node web service, with migrations and seed in the build.",
     "Staging mirrors production on its own branch, its own Neon database branch and noindex headers.",
-    "A deploy watchdog script cancels and retries Render deploys that stall.",
   ],
 
   stack: [
@@ -194,7 +198,7 @@ export const walkthrough: WalkFlow[] = [
     label: "Faculty",
     actor: "Signed in as a physics teacher",
     summary:
-      "Marks a register, enters and publishes quiz marks and posts homework; every write is permission-checked, scoped to the teacher's batches and audited in the same transaction.",
+      "Marks a register, enters and publishes quiz marks and posts homework; every write is permission-checked and scoped to the teacher's batches.",
     frame: { width: 1600, height: 832 },
     video: {
       ...v("walk-faculty"),
@@ -300,7 +304,7 @@ export const walkthrough: WalkFlow[] = [
         at: 0,
         title: "Signing in as a student",
         detail:
-          "The student signs in at the same login form the teacher uses, and the server works out the role. A student account carries a single permission: booking backup classes.",
+          "The student signs in on the same page the teacher uses. A student account carries a single permission: booking backup classes.",
         tech: ["one login form", "1 permission"],
         log: [
           { kind: "req", text: "POST /api/auth/login" },
@@ -513,7 +517,7 @@ export const walkthrough: WalkFlow[] = [
         at: 30.14,
         title: "Every write, under the name of whoever made it",
         detail:
-          "The audit log lists each write with the person who made it. Each row was written in the same transaction as its change, and its metadata never holds passwords or tokens.",
+          "The audit log lists each write with the person who made it. Its metadata never holds passwords or tokens.",
         tech: ["audit_logs", "no secrets in meta"],
         log: [
           { kind: "perm", text: "requirePermission('audit.view') ✓ · super admin, owner" },

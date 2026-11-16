@@ -21,11 +21,11 @@ export type ContactFormState =
 */
 const errorCopy: Record<ContactErrorCode, string> = {
   invalid: "Check the highlighted field and send again.",
-  too_fast: "That was quick. Give it a moment and send again.",
+  too_fast: "The form was sent too soon after the page loaded, which is how I filter bots. Wait a few seconds and send again.",
   forbidden: "The server refused a request from this page. Reload and try again.",
-  rate_limited: "You have sent a few already. Try again later, or email me directly.",
+  rate_limited: "This network has sent several messages in a short time. Try again in an hour, or email me.",
   unconfigured: notConfiguredReason,
-  server_error: "Your message did not save on my end. Try again in a minute.",
+  server_error: "Your message did not save on my end. Try again in a minute, or email me.",
 };
 
 const networkError = "Could not reach the server. Check your connection and try again.";

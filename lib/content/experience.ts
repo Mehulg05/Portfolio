@@ -9,7 +9,10 @@
   design filler and must never be cited as real.
 
   RBH Solutions: from Mehul (2026-09-28): SCADA software; admin and customer panels;
-  role-based screens for super admin, tech team and customer views. Stack not yet given.
+  role-based screens for super admin, tech team and customer views. Stack not yet given: the RBH stack tags (m4) wait for Mehul.
+
+  [CONFIRM] "Noida startup" and "Since September" were dropped: neither is in the resume.
+  [CONFIRM] m4: one scale fact per role (users, modules, screens) if Mehul can give one.
 
   The Sahayogi One stack tags (Next.js, NestJS, PostgreSQL, Docker) come from the resume's
   role line.
@@ -50,11 +53,10 @@ export const roles: Role[] = [
     company: "Sahayogi One",
     title: "Developer Trainee",
     period: "Jun 2026 – present",
-    summary: "Core product team at a Noida startup that builds business software for Indian SMEs.",
+    summary: "Core product team at Sahayogi One in Noida, which builds business software.",
     highlights: [
       "Designed the payroll and HR module before writing code: HLD, LLD, database schema and API contracts, approved by the senior team.",
-      "Built it end to end: attendance, leave policies, payroll processing, PF/ESI/TDS compliance, onboarding and full-and-final settlement.",
-      "Gave it role-based access at three levels.",
+      "Built it: attendance, leave policies, payroll processing, PF/ESI/TDS compliance, onboarding and full-and-final settlement, with role-based access at three levels.",
       "Shipped it through code review and QA covering functional, edge-case and regression tests. It runs in production.",
       "Now integrating Meta's WhatsApp Business APIs into the company's messaging product.",
     ],
@@ -71,7 +73,7 @@ export const roles: Role[] = [
     highlights: [
       "Built role-based screens for three roles, each seeing only what it may: super admin over the whole system, the internal tech team, and customers limited to their own sites and data.",
       "Built and updated admin-panel screens, where the system is run and configured.",
-      "Built several customer-panel screens, the part clients log in to and use.",
+      "Built customer-panel screens, the part clients log in to and use.",
     ],
   },
 ];
