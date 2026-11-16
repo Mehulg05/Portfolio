@@ -23,7 +23,7 @@ const errorCopy: Record<ContactErrorCode, string> = {
   invalid: "Check the highlighted field and send again.",
   too_fast: "That was quick. Give it a moment and send again.",
   forbidden: "The server refused a request from this page. Reload and try again.",
-  rate_limited: "You have sent a few already. Give it an hour, or email me directly.",
+  rate_limited: "You have sent a few already. Try again later, or email me directly.",
   unconfigured: notConfiguredReason,
   server_error: "Your message did not save on my end. Try again in a minute.",
 };
@@ -46,9 +46,12 @@ function isField(value: unknown): value is ContactField {
 
 // The body is whatever came over the wire: a platform error page, a proxy, a half-deployed
 // route. Anything that is not the contract is treated as not having reached the API.
-function parseResponse(value: unknown): ContactResponse | null {
-  if (typeof value !== "object" || value === null) return null;
-  const body = value as Record<string, unknown>;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseResponse(body: unknown): ContactResponse | null {
+  if (!isRecord(body)) return null;
   if (body.ok === true) return { ok: true };
   if (body.ok !== false || !isErrorCode(body.code)) return null;
   const message = typeof body.message === "string" ? body.message : "";

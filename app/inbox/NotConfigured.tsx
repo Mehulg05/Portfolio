@@ -19,7 +19,8 @@ export function NotConfigured({ missing }: Props) {
           Inbox
         </h1>
         <p className="mt-3 max-w-[52ch] leading-relaxed text-ink-dim">
-          The inbox is not configured on this deployment.
+          The inbox is not configured on this deployment. INBOX_SECRET must be at least
+          32 characters; generate one with <code className="font-mono text-[13px]">openssl rand -hex 32</code>.
         </p>
       </div>
       <div className="bg-ground p-5 sm:p-7">

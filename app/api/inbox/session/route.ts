@@ -5,7 +5,7 @@ import {
   checkSecret,
   createSessionValue,
   isInboxConfigured,
-  isSameOrigin,
+  isSameOriginOrUnspecified,
 } from "@/lib/contact/inbox-auth";
 
 // node:crypto for the HMAC and timingSafeEqual.
@@ -37,7 +37,7 @@ async function readForm(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isSameOrigin(request)) {
+  if (!isSameOriginOrUnspecified(request)) {
     return new Response("Forbidden", { status: 403 });
   }
 

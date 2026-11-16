@@ -10,13 +10,16 @@ const inputClass =
   "w-full min-h-11 border border-line bg-ground px-3 py-2.5 text-base text-ink transition-colors placeholder:text-ink-faint focus:border-accent focus:outline-none aria-[invalid=true]:border-redline aria-[invalid=true]:focus:border-redline sm:min-h-10 sm:text-sm";
 const labelClass = "font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint";
 
-const announcements: Record<ContactFormState["status"], string> = {
-  idle: "",
-  sending: "Sending your message.",
-  sent: "Message sent.",
-  error: "Message not sent.",
-  unconfigured: `${notConfiguredReason} Email me instead.`,
-};
+/*
+  Only for states that do not move focus. Success, the unconfigured note and a field error
+  all take focus, and the focused element already reads itself out; announcing them here
+  too would say everything twice.
+*/
+function announcementFor(state: ContactFormState) {
+  if (state.status === "sending") return "Sending your message.";
+  if (state.status === "error" && !state.field) return `Message not sent. ${state.message}`;
+  return "";
+}
 
 export function ContactForm({ email }: { email: string }) {
   const { state, submit, reset, clearFieldError, formRef, headingRef, noteRef } =
@@ -34,8 +37,7 @@ export function ContactForm({ email }: { email: string }) {
     "aria-describedby": invalidField === field ? errorId : undefined,
   });
 
-  const announcement =
-    state.status === "error" ? `${announcements.error} ${state.message}` : announcements[state.status];
+  const announcement = announcementFor(state);
 
   return (
     <div className="contact-form">

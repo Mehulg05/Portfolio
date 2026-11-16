@@ -19,9 +19,15 @@ const SESSION_LIFETIME_MS = INBOX_SESSION_MAX_AGE_SECONDS * 1000;
 // Digits only, and short enough that Number() stays an exact integer.
 const SESSION_PATTERN = /^(\d{1,15})\.([0-9a-f]{64})$/;
 
+/*
+  The brute-force argument (no lockout, just a short delay) only holds for a long random
+  secret, so a short one is treated as no secret at all rather than trusted.
+*/
+export const MIN_SECRET_LENGTH = 32;
+
 function readSecret() {
   const secret = process.env.INBOX_SECRET;
-  return secret ? secret : null;
+  return secret && secret.length >= MIN_SECRET_LENGTH ? secret : null;
 }
 
 export function isInboxConfigured() {
@@ -81,7 +87,7 @@ export async function hasInboxSession() {
  * it has to be this origin. A missing header is allowed (some clients omit it on
  * same-origin form posts); the literal "null" origin is not.
  */
-export function isSameOrigin(request: Request) {
+export function isSameOriginOrUnspecified(request: Request) {
   const origin = request.headers.get("origin");
   if (origin === null) return true;
   return origin === new URL(request.url).origin;

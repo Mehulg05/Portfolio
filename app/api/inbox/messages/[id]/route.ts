@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasInboxSession, isSameOrigin } from "@/lib/contact/inbox-auth";
+import { hasInboxSession, isSameOriginOrUnspecified } from "@/lib/contact/inbox-auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { isMessageStatus, setMessageStatus } from "@/lib/db/messages";
 
@@ -19,7 +19,7 @@ function text(body: string, status: number) {
   acted on.
 */
 export async function POST(request: Request, { params }: RouteContext<"/api/inbox/messages/[id]">) {
-  if (!isSameOrigin(request)) return text("Forbidden", 403);
+  if (!isSameOriginOrUnspecified(request)) return text("Forbidden", 403);
   if (!(await hasInboxSession())) return text("Sign in at /inbox first.", 401);
   if (!isDatabaseConfigured()) return text("DATABASE_URL is not set.", 503);
 

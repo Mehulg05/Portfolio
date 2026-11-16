@@ -78,7 +78,7 @@ function requestOrigin(request: Request) {
  * Browsers always send Origin on a cross-site POST, so a mismatch means another site is
  * posting into the form. Skipped outside production, where localhost ports and tunnels vary.
  */
-export function isSameOrigin(request: Request) {
+export function isTrustedContactOrigin(request: Request) {
   if (!isProduction()) return true;
   const origin = requestOrigin(request);
   return origin !== null && allowedOrigins().has(origin);

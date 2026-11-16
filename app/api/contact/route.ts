@@ -1,9 +1,9 @@
 import { after } from "next/server";
-import { clientIp, hashIp, isSameOrigin } from "@/lib/contact/abuse";
+import { clientIp, hashIp, isTrustedContactOrigin } from "@/lib/contact/abuse";
 import { isContactConfigured } from "@/lib/contact/config";
 import { sendNotification } from "@/lib/contact/notify";
 import { contactLimits, type ContactErrorCode, type ContactField, type ContactResponse } from "@/lib/contact/types";
-import { validateContact, type ContactSubmission } from "@/lib/contact/validate";
+import { isHoneypotFilled, validateContact, type ContactSubmission } from "@/lib/contact/validate";
 import { profile } from "@/lib/content/profile";
 import { countRecentByEmail, countRecentByIp, insertMessage, markNotified } from "@/lib/db/messages";
 import { siteUrl } from "@/lib/site";
@@ -31,12 +31,29 @@ function isJson(request: Request) {
   return type === "application/json";
 }
 
-/** The body as text, or null when it is too large. Checks the header first to skip reading obvious floods. */
+/**
+ * The body as text, or null when it is too large. Reads the stream itself and stops at the
+ * limit, because a chunked upload has no Content-Length and request.text() would buffer it all.
+ */
 async function readBody(request: Request) {
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBodyBytes) return null;
-  const text = await request.text();
-  return Buffer.byteLength(text, "utf8") > maxBodyBytes ? null : text;
+  if (!request.body) return "";
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBodyBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
 function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
@@ -104,7 +121,7 @@ export async function POST(request: Request) {
     return failure(503, "unconfigured", "The contact form is not available right now.");
   }
 
-  if (!isSameOrigin(request)) {
+  if (!isTrustedContactOrigin(request)) {
     return failure(403, "forbidden", "This form only accepts messages from the site itself.");
   }
 
@@ -114,15 +131,15 @@ export async function POST(request: Request) {
   const parsed = parseJson(text);
   if (!parsed.ok) return failure(400, "invalid", "The request could not be read.");
 
-  const result = validateContact(parsed.value, contactLimits);
-  if (!result.ok) return failure(400, "invalid", result.message, result.field);
-  const submission = result.value;
-
   // Same answer a person gets, so the bot learns nothing and does not retry with a fix.
-  if (submission.website) {
+  if (isHoneypotFilled(parsed.value)) {
     console.info("contact: honeypot filled, dropping the submission.");
     return reply(200, { ok: true });
   }
+
+  const result = validateContact(parsed.value, contactLimits);
+  if (!result.ok) return failure(400, "invalid", result.message, result.field);
+  const submission = result.value;
 
   if (isTooFast(submission.elapsedMs)) {
     return failure(400, "too_fast", "That was quick. Please wait a moment and send again.");

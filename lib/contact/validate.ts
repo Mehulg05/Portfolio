@@ -32,6 +32,11 @@ export type ValidationResult =
 // check is whether a reply arrives.
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// A name is one line: a newline in it would forge extra header-like lines in the email body.
+const controlCharacters = /[\u0000-\u001f\u007f\u2028\u2029]/;
+// Postgres text cannot hold NUL; letting it through turns a bad request into a 500.
+const nulCharacter = /\u0000/;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -48,6 +53,7 @@ function fail(field: ContactField, message: string): ValidationResult {
 function validateName(value: string, limits: ValidationLimits) {
   if (value.length < limits.name.min) return "Please enter your name.";
   if (value.length > limits.name.max) return `Your name must be ${limits.name.max} characters or fewer.`;
+  if (controlCharacters.test(value)) return "Please keep your name on one line.";
   return null;
 }
 
@@ -55,7 +61,7 @@ function validateEmail(value: string, limits: ValidationLimits) {
   if (value.length === 0) return "Please enter your email address.";
   // Length before pattern, so the regex never runs on an oversized string.
   if (value.length > limits.email.max) return `Your email address must be ${limits.email.max} characters or fewer.`;
-  if (!emailPattern.test(value)) return "Please enter a valid email address.";
+  if (!emailPattern.test(value) || controlCharacters.test(value)) return "Please enter a valid email address.";
   return null;
 }
 
@@ -63,6 +69,7 @@ function validateMessage(value: string, limits: ValidationLimits) {
   if (value.length === 0) return "Please write a message.";
   if (value.length < limits.message.min) return `Your message must be at least ${limits.message.min} characters.`;
   if (value.length > limits.message.max) return `Your message must be ${limits.message.max} characters or fewer.`;
+  if (nulCharacter.test(value)) return "Your message contains a character that cannot be saved.";
   return null;
 }
 
@@ -78,6 +85,14 @@ function readHoneypot(value: unknown) {
 
 function readElapsed(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+/**
+ * Checked before field validation, so a bot that fills the trap gets the same success
+ * whatever else it sent, and never a field error that would teach it what to fix.
+ */
+export function isHoneypotFilled(body: unknown) {
+  return isRecord(body) && readHoneypot(body.website) !== "";
 }
 
 /** Turns an untrusted JSON body into a trimmed submission or the first field that failed. */
