@@ -3,7 +3,7 @@
   stacked layout the admin pages use on phones (LinkButton is an inline anchor only).
 */
 const recipe =
-  "inline-flex min-h-11 items-center justify-center gap-2 border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] sm:min-h-10";
+  "transition-colors active:translate-y-px disabled:cursor-wait disabled:opacity-60 inline-flex min-h-11 items-center justify-center gap-2 border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] sm:min-h-10";
 const base = `${recipe} w-full sm:w-auto`;
 
 const tones = {

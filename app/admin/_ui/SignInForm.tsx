@@ -1,3 +1,4 @@
+import { PendingForm } from "@/app/admin/_ui/PendingForm";
 import { buttonStyles, labelStyle } from "@/app/admin/_ui/styles";
 
 export type SignInError = "wrong" | "code" | "locked" | null;
@@ -72,12 +73,14 @@ function CodeSection({ error, codeSent }: { error: SignInError; codeSent: boolea
 
   return (
     <div className="mt-7">
-      <form method="post" action="/api/admin/session">
-        <input type="hidden" name="intent" value="request-code" />
-        <button type="submit" className={showCodeField ? buttonStyles.default : buttonStyles.accentBlock}>
-          {showCodeField ? "Email me a new code" : "Email me a code"}
-        </button>
-      </form>
+      <PendingForm
+        action="/api/admin/session"
+        intent="request-code"
+        variant={showCodeField ? "default" : "accentBlock"}
+        label={showCodeField ? "Email me a new code" : "Email me a code"}
+        pendingLabel="Sending…"
+        className="[&>button]:mt-0"
+      />
 
       {codeSent && !error ? (
         <p role="status" className="mt-4 font-mono text-[12px] leading-relaxed text-ink-dim">
@@ -86,8 +89,14 @@ function CodeSection({ error, codeSent }: { error: SignInError; codeSent: boolea
       ) : null}
 
       {showCodeField ? (
-        <form method="post" action="/api/admin/session" className="mt-6">
-          <input type="hidden" name="intent" value="verify-code" />
+        <PendingForm
+          action="/api/admin/session"
+          intent="verify-code"
+          variant="accentBlock"
+          label="Sign in"
+          pendingLabel="Checking…"
+          className="mt-6 [&>button]:mt-6"
+        >
           <label htmlFor="admin-code" className={`${labelStyle} block`}>
             6-digit code
           </label>
@@ -107,10 +116,7 @@ function CodeSection({ error, codeSent }: { error: SignInError; codeSent: boolea
             className="mt-2.5 block min-h-11 w-full border border-line-bright bg-ground px-3 py-2 font-mono text-lg tracking-[0.4em] text-ink focus-visible:border-accent aria-[invalid=true]:border-redline"
           />
           {errorId && error ? <ErrorLine id={errorId}>{errorCopy[error]}</ErrorLine> : null}
-          <button type="submit" className={`${buttonStyles.accentBlock} mt-6`}>
-            Sign in
-          </button>
-        </form>
+        </PendingForm>
       ) : null}
     </div>
   );

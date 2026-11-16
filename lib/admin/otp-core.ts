@@ -11,6 +11,8 @@ export const OTP_TTL_SECONDS = 10 * 60;
 /** Codes that may be requested per window, across all callers: the inbox is the thing protected. */
 export const OTP_REQUEST_LIMIT = 3;
 export const OTP_REQUEST_WINDOW_SECONDS = 10 * 60;
+/** Minimum gap between two codes, so a double click or a held-down Enter sends one email. */
+export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 /** Wrong guesses a single code survives, however many IPs they come from. */
 export const OTP_MAX_ATTEMPTS = 5;
 
@@ -24,6 +26,11 @@ export type StoredCode = { codeHash: string; expiresAt: Date; attempts: number; 
 
 export function isLockedOut(recentFailures: number) {
   return recentFailures >= LOGIN_FAILURE_LIMIT;
+}
+
+/** Whether another code may be issued, given the recent history (all callers combined). */
+export function canIssueCode(requestsInWindow: number, secondsSinceLast: number) {
+  return requestsInWindow < OTP_REQUEST_LIMIT && secondsSinceLast >= OTP_RESEND_COOLDOWN_SECONDS;
 }
 
 /** Uniform over 000000-999999 from the CSPRNG; randomInt avoids modulo bias. */

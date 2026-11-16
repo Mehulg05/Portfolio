@@ -2,7 +2,7 @@ import "server-only";
 import { adminHost } from "@/lib/admin/host";
 import { otpKey } from "@/lib/admin/auth";
 import {
-  OTP_REQUEST_LIMIT,
+  canIssueCode,
   OTP_REQUEST_WINDOW_SECONDS,
   OTP_TTL_SECONDS,
   buildCodeEmail,
@@ -22,6 +22,8 @@ import { getDb } from "@/lib/db/client";
 
 const resendEndpoint = "https://api.resend.com/emails";
 const SEND_TIMEOUT_MS = 5000;
+// Arbitrary constant naming the lock that serialises code issuing.
+const ISSUE_LOCK_KEY = 7_340_211;
 
 type CodeRow = { id: string; code_hash: string; expires_at: Date; attempts: number; used_at: Date | null };
 
@@ -52,19 +54,33 @@ export async function requestCode(): Promise<boolean> {
   if (!key || !isEmailSignInAvailable()) return false;
   const sql = getDb();
 
-  const [{ count }] = await sql<{ count: number }[]>`
-    select count(*)::int as count from admin_login_codes
-    where created_at > now() - ${OTP_REQUEST_WINDOW_SECONDS}::int * interval '1 second'
-  `;
-  if (count >= OTP_REQUEST_LIMIT) return false;
-
   const code = generateCode();
-  // A newer code replaces older ones: only the latest email is ever valid.
-  await sql`update admin_login_codes set used_at = now() where used_at is null`;
-  await sql`
-    insert into admin_login_codes (expires_at, code_hash)
-    values (now() + ${OTP_TTL_SECONDS}::int * interval '1 second', ${hashCode(code, key)})
-  `;
+  const codeHash = hashCode(code, key);
+
+  /*
+    Count-then-insert is a race: seven clicks in one second all read "0 recent" before any
+    insert lands. The advisory lock makes concurrent requests take turns, so each one sees
+    the previous one's row. It is released when the transaction ends.
+  */
+  const issued = await sql.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(${ISSUE_LOCK_KEY})`;
+    const [recent] = await tx<{ count: number; since: number }[]>`
+      select count(*)::int as count,
+             coalesce(extract(epoch from now() - max(created_at)), 1e9)::float8 as since
+      from admin_login_codes
+      where created_at > now() - ${OTP_REQUEST_WINDOW_SECONDS}::int * interval '1 second'
+    `;
+    if (!recent || !canIssueCode(recent.count, recent.since)) return false;
+
+    // A newer code replaces older ones: only the latest email is ever valid.
+    await tx`update admin_login_codes set used_at = now() where used_at is null`;
+    await tx`
+      insert into admin_login_codes (expires_at, code_hash)
+      values (now() + ${OTP_TTL_SECONDS}::int * interval '1 second', ${codeHash})
+    `;
+    return true;
+  });
+  if (!issued) return false;
   return deliver(code);
 }
 
