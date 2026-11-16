@@ -100,7 +100,7 @@ export function ContactForm({ email }: { email: string }) {
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <p className="font-mono text-[11px] text-ink-faint">
-              Stored in my own Postgres. No third-party form service.
+              Saved in my own Postgres, with a hashed IP for rate limits, and copied to my email through Resend.
             </p>
             {/*
               aria-disabled, not disabled: a disabled button drops keyboard focus to the
@@ -213,7 +213,7 @@ function Confirmation({
         Message received.
       </h4>
       <p className="mt-2 max-w-[46ch] text-sm leading-relaxed text-ink-dim">
-        It is in my inbox. I reply to anything real, usually within two days.
+        It is in my inbox.
       </p>
       {replyTo ? (
         <p className="mt-3 font-mono text-[11px] break-all text-ink-faint">

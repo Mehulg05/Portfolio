@@ -1,9 +1,5 @@
 import { Reveal } from "@/components/animation/Reveal";
-import {
-  ContactEmailNote,
-  needsScriptReason,
-  notConfiguredReason,
-} from "@/components/sections/ContactEmailNote";
+import { ContactEmailNote, needsScriptReason } from "@/components/sections/ContactEmailNote";
 import { ContactForm } from "@/components/sections/ContactForm";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LinkButton } from "@/components/ui/LinkButton";
@@ -18,50 +14,52 @@ export function Contact() {
     backstop if that ever drifts. Unconfigured, the form is not rendered at all.
   */
   const configured = isContactConfigured();
+  // [CONFIRM] "after I graduate in 2027" and the absent reply time: see docs/reviews/open-questions-r2.md.
+  const intro = (
+    <Reveal as="p" className="max-w-[56ch] text-lg leading-relaxed text-ink-dim">
+      I am looking for {profile.openTo.toLowerCase()} after I graduate in {profile.graduation}. If you
+      are hiring, or want to ask how something on this page was built, write to me.
+    </Reveal>
+  );
 
   return (
     <section id="contact" className="sheet-section">
-      <SectionHeader label="Contact" title="Let's build together" />
+      <SectionHeader label="Contact" title="Email me, or write here" />
 
       {/*
         Two panels separated by a hairline, the same gap-px/bg-line construction the
         Appendix and the hero's title block use — so this reads as part of the sheet
         rather than a card style invented for one section.
       */}
-      <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line lg:grid-cols-[1.3fr_1fr]">
-        <div className="bg-ground p-5 sm:p-7">
-          <Reveal as="p" className="max-w-[46ch] text-lg leading-relaxed text-ink-dim">
-            Have an idea worth building, a problem worth solving, or a question about
-            something on this page? I&apos;m always up for a conversation with people who
-            make things. Send a note and I&apos;ll get back to you.
-          </Reveal>
-
-          <Reveal className="mt-8 border-t border-line pt-6">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              Send a message
-            </h3>
-            <div className="mt-5">
-              {configured ? (
-                <>
-                  <ContactForm email={profile.email} />
-                  {/*
-                    Sending needs JavaScript, so without it the form is hidden and the
-                    address takes its place. Inside <noscript> the style only applies
-                    when scripts are off; React leaves the block alone on hydration.
-                  */}
-                  <noscript>
-                    <style>{".contact-form{display:none}"}</style>
-                    <ContactEmailNote email={profile.email} reason={needsScriptReason} />
-                  </noscript>
-                </>
-              ) : (
-                <ContactEmailNote email={profile.email} reason={notConfiguredReason} />
-              )}
-            </div>
-          </Reveal>
-        </div>
+      <div
+        className={`mt-10 grid grid-cols-1 gap-px border border-line bg-line ${configured ? "lg:grid-cols-[1.3fr_1fr]" : ""}`}
+      >
+        {configured ? (
+          <div className="bg-ground p-5 sm:p-7">
+            {intro}
+            <Reveal className="mt-8 border-t border-line pt-6">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                Send a message
+              </h3>
+              <div className="mt-5">
+                <ContactForm email={profile.email} />
+                {/*
+                  Sending needs JavaScript, so without it the form is hidden and the
+                  address takes its place. Inside <noscript> the style only applies
+                  when scripts are off; React leaves the block alone on hydration.
+                */}
+                <noscript>
+                  <style>{".contact-form{display:none}"}</style>
+                  <ContactEmailNote email={profile.email} reason={needsScriptReason} />
+                </noscript>
+              </div>
+            </Reveal>
+          </div>
+        ) : null}
 
         <div className="bg-ground p-5 sm:p-7">
+          {/* Without a form, email is the whole contact route and takes the width. */}
+          {configured ? null : <div className="mb-8">{intro}</div>}
           <Reveal>
             <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
               Reach me directly

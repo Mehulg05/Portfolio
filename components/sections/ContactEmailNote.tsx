@@ -1,6 +1,6 @@
 import type { Ref } from "react";
 
-export const notConfiguredReason = "The form is not configured on this build.";
+export const notConfiguredReason = "The form is offline right now.";
 export const needsScriptReason = "The form needs JavaScript to send.";
 
 /*
@@ -24,11 +24,10 @@ export function ContactEmailNote({
       tabIndex={ref ? -1 : undefined}
       className="border-l-2 border-line-bright pl-3 text-sm leading-relaxed text-ink-dim focus:outline-none"
     >
-      {reason} Email me at{" "}
+      {reason} Email me instead:{" "}
       <a href={`mailto:${email}`} className="break-all text-accent hover:underline">
         {email}
       </a>
-      .
     </p>
   );
 }

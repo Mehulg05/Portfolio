@@ -8,8 +8,8 @@ import Link from "next/link";
 */
 const titleBlock = [
   { label: "Status", value: "404", tone: "text-redline" },
-  { label: "Sheet", value: "Not in this set", tone: "text-ink" },
-  { label: "Next", value: "Return to the index", tone: "text-ink" },
+  { label: "Address", value: "Not found", tone: "text-ink" },
+  { label: "Next", value: "Back to the page", tone: "text-ink" },
 ];
 
 export default function NotFound() {

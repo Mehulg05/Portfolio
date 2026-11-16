@@ -6,6 +6,8 @@ Personal portfolio at mehulgupta.me. Next.js 16 (App Router), TypeScript, Tailwi
 npm run dev
 npm run lint
 npm run build
+npm test          # node:test suites under lib/**
+npm run db:dev    # local Postgres (PGlite); db:migrate, db:inspect, db:prune
 ```
 
 ## Where things live
@@ -38,7 +40,7 @@ script in `<head>` sets only when JavaScript runs and `prefers-reduced-motion` i
 Without it, every section renders fully visible and still. The larger pieces, such as
 the pinned timeline track, also check `lib/motion/use-motion-enabled.ts`, which needs a
 1024px viewport. Scroll-linked work shares one rAF-throttled listener in
-`lib/motion/scroll-progress.ts`. Lenis handles smooth scrolling. There is no animation library.
+`lib/motion/scroll-progress.ts`. Scrolling is native; anchors use `scroll-margin-top`. There is no animation library.
 
 ## Deploying (Vercel, free tier)
 
