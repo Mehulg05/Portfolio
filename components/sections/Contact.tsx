@@ -20,7 +20,7 @@ export function Contact() {
   const configured = isContactConfigured();
 
   return (
-    <section id="contact" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+    <section id="contact" className="sheet-section">
       <SectionHeader label="Contact" title="Let's build together" />
 
       {/*
