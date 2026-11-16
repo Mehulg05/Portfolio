@@ -1,14 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+  type RefObject,
+} from "react";
 import {
   walkthrough,
   type ImageFlow,
   type ImageStep,
   type LogKind,
-  type LogLine,
   type VideoFlow,
+  type VideoStep,
   type WalkFlow,
 } from "@/lib/content/client-work";
 import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
@@ -22,6 +32,8 @@ import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
   Without JavaScript the <noscript> block lists every video (native controls) and trace.
 */
 
+// Matches the 2.5rem edge fade on .walk-tabs in client-work.css.
+const TAB_EDGE_FADE_PX = 40;
 const IMAGE_BASE_MS = 3600;
 const IMAGE_PER_LINE_MS = 520;
 const imageStepMs = (step: ImageStep) => IMAGE_BASE_MS + step.log.length * IMAGE_PER_LINE_MS;
@@ -60,19 +72,56 @@ const stepIndexAt = (flow: VideoFlow, t: number) => {
   return index;
 };
 
+const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+
+/*
+  Marks a horizontal scroller with data-fade-start / data-fade-end while content is hidden
+  past that edge, so CSS can fade the edge as a "there is more" cue. Written to the DOM
+  directly: scrolling should never re-render React.
+*/
+function useEdgeFade(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const update = () => {
+      const hidden = node.scrollWidth - node.clientWidth;
+      node.toggleAttribute("data-fade-start", node.scrollLeft > 1);
+      node.toggleAttribute("data-fade-end", hidden - node.scrollLeft > 1);
+    };
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    // Tabs change width when the webfont lands, which moves scrollWidth without resizing the list.
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    for (const child of Array.from(node.children)) observer.observe(child);
+    return () => {
+      node.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [ref]);
+}
+
 export function Walkthrough() {
   const motion = useMotionEnabled(0);
   const [flowIndex, setFlowIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [wantsPlay, setWantsPlay] = useState<boolean | null>(null);
   const [inView, setInView] = useState(false);
+  const [near, setNear] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  // True after a visitor moves the tour, false once it moves itself: only their own
+  // changes are announced, so autoplay doesn't talk over the page every few seconds.
+  const [userDriven, setUserDriven] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
+  const playButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEdgeFade(tabListRef);
 
   // Autoplay by default only where motion is allowed; reduced motion waits for a click.
   const playing = (wantsPlay ?? motion) && inView;
@@ -87,12 +136,29 @@ export function Walkthrough() {
     return () => observer.disconnect();
   }, []);
 
+  // The recording only starts fetching metadata once the section is a screen or so away,
+  // so a visitor who never scrolls here downloads nothing but the poster. Set once, kept.
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setNear(true);
+        observer.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   // Keep the active tab in view inside its own scroller, without moving the page.
   useEffect(() => {
     const tab = tabRefs.current[flowIndex];
     const list = tab?.parentElement;
     if (!tab || !list || list.scrollWidth <= list.clientWidth) return;
-    list.scrollTo({ left: tab.offsetLeft - 20, behavior: motion ? "smooth" : "auto" });
+    list.scrollTo({ left: tab.offsetLeft - TAB_EDGE_FADE_PX - 8, behavior: motion ? "smooth" : "auto" });
   }, [flowIndex, motion]);
 
   const flow = walkthrough[flowIndex] ?? walkthrough[0];
@@ -103,7 +169,7 @@ export function Walkthrough() {
     if (!video || flow?.kind !== "video") return;
     if (playing) void video.play().catch(() => setVideoPlaying(false));
     else video.pause();
-  }, [playing, flow, flowIndex]);
+  }, [playing, flow]);
 
   // Fill the active rail segment from the video clock, without re-rendering React.
   useEffect(() => {
@@ -153,6 +219,23 @@ export function Walkthrough() {
     }
   };
 
+  // Every handler a visitor can trigger goes through `byUser`; the tour's own clock doesn't.
+  const byUser = (action: () => void) => {
+    setUserDriven(true);
+    action();
+  };
+  const autoAdvance = () => {
+    setUserDriven(false);
+    advance();
+  };
+  // Video steps follow the clock. A seek lands on the step the visitor picked, so only a
+  // clock tick that crosses into a new step counts as the tour moving itself.
+  const followClock = (index: number) => {
+    if (index === stepIndex) return;
+    setUserDriven(false);
+    setStepIndex(index);
+  };
+
   const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
     const last = walkthrough.length - 1;
     const moves: Record<string, number> = {
@@ -164,23 +247,24 @@ export function Walkthrough() {
     const target = moves[event.key];
     if (target === undefined) return;
     event.preventDefault();
-    goTo(target, 0);
+    byUser(() => goTo(target, 0));
     tabRefs.current[target]?.focus();
   };
 
-  const step = flow.steps[stepIndex] ?? flow.steps[0];
-  if (!step) return null;
   const stepKey = `${flow.id}-${stepIndex}`;
   const isPlaying = flow.kind === "video" ? videoPlaying : playing;
+  const activeImageStep = flow.kind === "images" ? flow.steps[stepIndex] : undefined;
 
   return (
     <div ref={rootRef} className="walk mt-6">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        {/* The vertical padding keeps focus rings clear of the scroller's clipping edge. */}
         <div
+          ref={tabListRef}
           role="tablist"
           aria-label="Walkthrough, one flow per role"
           onKeyDown={onTabKey}
-          className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0"
+          className="walk-tabs relative -mx-5 -my-1 flex gap-1.5 overflow-x-auto px-5 py-1 sm:-mx-1 sm:px-1"
         >
           {walkthrough.map((item, index) => {
             const selected = index === flowIndex;
@@ -196,8 +280,8 @@ export function Walkthrough() {
                 aria-selected={selected}
                 aria-controls="walk-panel"
                 tabIndex={selected ? 0 : -1}
-                onClick={() => goTo(index, 0)}
-                className={`flex min-h-11 shrink-0 items-center gap-2 border px-3.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-200 sm:min-h-10 ${
+                onClick={() => byUser(() => goTo(index, 0))}
+                className={`flex min-h-11 shrink-0 items-center gap-2 border px-3.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-200 focus-visible:outline-offset-2 sm:min-h-10 ${focusRing} ${
                   selected
                     ? "border-accent bg-surface text-ink"
                     : "border-line text-ink-faint hover:border-line-bright hover:text-ink-dim"
@@ -215,16 +299,17 @@ export function Walkthrough() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <ControlButton label="Previous step" onClick={retreat}>
+          <ControlButton label="Previous step" onClick={() => byUser(retreat)}>
             <path d="M9.5 3.5 5 8l4.5 4.5" />
           </ControlButton>
           <ControlButton
+            buttonRef={playButtonRef}
             label={isPlaying ? "Pause the walkthrough" : "Play the walkthrough"}
-            onClick={() => setWantsPlay(!isPlaying)}
+            onClick={() => byUser(() => setWantsPlay(!isPlaying))}
           >
             {isPlaying ? <path d="M6 4v8M10 4v8" /> : <path d="M5.5 3.5v9l7-4.5z" />}
           </ControlButton>
-          <ControlButton label="Next step" onClick={advance}>
+          <ControlButton label="Next step" onClick={() => byUser(advance)}>
             <path d="M6.5 3.5 11 8l-4.5 4.5" />
           </ControlButton>
         </div>
@@ -263,20 +348,33 @@ export function Walkthrough() {
               key={flow.id}
               flow={flow}
               videoRef={videoRef}
+              preload={near ? "metadata" : "none"}
               playing={videoPlaying}
               onPlayingChange={setVideoPlaying}
-              onStep={(index) => setStepIndex((current) => (current === index ? current : index))}
+              onClockStep={followClock}
+              onSeekStep={setStepIndex}
               onEnded={() => {
-                if (wantsPlay ?? motion) nextFlow();
+                if (!(wantsPlay ?? motion)) return;
+                setUserDriven(false);
+                nextFlow();
               }}
-              onPlayRequest={() => setWantsPlay(true)}
+              onPlayRequest={() =>
+                byUser(() => {
+                  setWantsPlay(true);
+                  // The overlay unmounts once playback starts; keep keyboard focus on the toolbar.
+                  playButtonRef.current?.focus();
+                })
+              }
             />
           ) : (
             <ImageStage flow={flow} stepIndex={stepIndex} stepKey={stepKey} />
           )}
 
-          {/* Step rail. Video: the active segment fills from the video clock. Images: it is the tour's clock. */}
-          <div className="flex gap-1 border-t border-line px-3 py-2.5">
+          {/*
+            Step rail. Video: the active segment fills from the video clock. Images: it is the
+            tour's clock. Each button is a 44px touch target around a 2px bar.
+          */}
+          <div className="flex gap-1 border-t border-line px-3 py-1 sm:py-2.5">
             {flow.steps.map((item, index) => {
               const state = index < stepIndex ? "done" : index === stepIndex ? "active" : "todo";
               return (
@@ -285,8 +383,8 @@ export function Walkthrough() {
                   type="button"
                   aria-label={`Step ${index + 1} of ${flow.steps.length}: ${item.title}`}
                   aria-current={index === stepIndex ? "step" : undefined}
-                  onClick={() => seekStep(index)}
-                  className="group flex min-h-6 flex-1 items-center"
+                  onClick={() => byUser(() => seekStep(index))}
+                  className={`group flex min-h-11 flex-1 items-center focus-visible:outline-offset-0 sm:min-h-6 ${focusRing}`}
                 >
                   <span className="relative block h-0.5 w-full overflow-hidden bg-line-bright group-hover:bg-ink-faint">
                     {state === "done" ? <span className="absolute inset-0 bg-accent/60" /> : null}
@@ -297,13 +395,13 @@ export function Walkthrough() {
                           className="absolute inset-0 origin-left bg-accent"
                           style={{ transform: videoPlaying ? undefined : "scaleX(1)" }}
                         />
-                      ) : playing ? (
+                      ) : playing && activeImageStep ? (
                         <span
                           key={stepKey}
                           className="walk-progress absolute inset-0 bg-accent"
                           data-paused={hovering ? "" : undefined}
-                          style={{ "--step": `${imageStepMs(item as ImageStep)}ms` } as CSSProperties}
-                          onAnimationEnd={advance}
+                          style={{ "--step": `${imageStepMs(activeImageStep)}ms` } as CSSProperties}
+                          onAnimationEnd={autoAdvance}
                         />
                       ) : (
                         <span className="absolute inset-0 bg-accent" />
@@ -316,7 +414,7 @@ export function Walkthrough() {
           </div>
         </figure>
 
-        <Trace flow={flow} title={step.title} detail={step.detail} log={step.log} tech={step.tech} stepIndex={stepIndex} stepKey={stepKey} />
+        <Trace flow={flow} stepIndex={stepIndex} announce={userDriven} />
       </div>
 
       <noscript>
@@ -326,14 +424,25 @@ export function Walkthrough() {
   );
 }
 
-function ControlButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+function ControlButton({
+  label,
+  onClick,
+  children,
+  buttonRef,
+}: {
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+  buttonRef?: Ref<HTMLButtonElement>;
+}) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex h-11 w-11 items-center justify-center border border-line text-ink-dim transition-colors duration-200 hover:border-accent hover:text-accent sm:h-10 sm:w-10"
+      className={`flex h-11 w-11 items-center justify-center border border-line text-ink-dim transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline-offset-2 sm:h-10 sm:w-10 ${focusRing}`}
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-none stroke-current" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         {children}
@@ -342,24 +451,35 @@ function ControlButton({ label, onClick, children }: { label: string; onClick: (
   );
 }
 
-/* A screen recording. The step follows the video clock; a play button covers it while paused. */
+/*
+  A screen recording. The step follows the video clock; a play button covers it while paused.
+  The poster always shows; `preload` only decides whether metadata is fetched ahead of a
+  click, and play() still works from "none".
+*/
 function VideoStage({
   flow,
   videoRef,
+  preload,
   playing,
   onPlayingChange,
-  onStep,
+  onClockStep,
+  onSeekStep,
   onEnded,
   onPlayRequest,
 }: {
   flow: VideoFlow;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  preload: "none" | "metadata";
   playing: boolean;
   onPlayingChange: (playing: boolean) => void;
-  onStep: (index: number) => void;
+  onClockStep: (index: number) => void;
+  onSeekStep: (index: number) => void;
   onEnded: () => void;
   onPlayRequest: () => void;
 }) {
+  // Switching flows unmounts this <video> mid-play, and its pause event never reaches React,
+  // so report "not playing" on the way out or the toolbar stays stuck on Pause.
+  useEffect(() => () => onPlayingChange(false), [onPlayingChange]);
   return (
     <div className="relative bg-[#f5f4f0]" style={{ aspectRatio: `${flow.frame.width} / ${flow.frame.height}` }}>
       <video
@@ -369,12 +489,12 @@ function VideoStage({
         poster={flow.video.poster}
         muted
         playsInline
-        preload="metadata"
+        preload={preload}
         aria-label={flow.video.description}
         onPlay={() => onPlayingChange(true)}
         onPause={() => onPlayingChange(false)}
-        onTimeUpdate={(event) => onStep(stepIndexAt(flow, event.currentTarget.currentTime))}
-        onSeeked={(event) => onStep(stepIndexAt(flow, event.currentTarget.currentTime))}
+        onTimeUpdate={(event) => onClockStep(stepIndexAt(flow, event.currentTarget.currentTime))}
+        onSeeked={(event) => onSeekStep(stepIndexAt(flow, event.currentTarget.currentTime))}
         onEnded={() => {
           onPlayingChange(false);
           onEnded();
@@ -387,7 +507,8 @@ function VideoStage({
             onPlayRequest();
             void videoRef.current?.play().catch(() => undefined);
           }}
-          className="walk-play absolute inset-0 flex items-center justify-center bg-[#0b0e13]/25 transition-colors duration-200 hover:bg-[#0b0e13]/35"
+          // Inset ring: the frame clips anything drawn outside it.
+          className={`walk-play absolute inset-0 flex items-center justify-center bg-[#0b0e13]/25 transition-colors duration-200 hover:bg-[#0b0e13]/35 focus-visible:-outline-offset-4 ${focusRing}`}
           aria-label={`Play: ${flow.label} walkthrough`}
         >
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-ground shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)]">
@@ -433,65 +554,99 @@ function ImageStage({ flow, stepIndex, stepKey }: { flow: ImageFlow; stepIndex: 
   );
 }
 
-/* What the step means, and the trace of what the server did. */
-function Trace({
-  flow,
-  title,
-  detail,
-  log,
-  tech,
-  stepIndex,
-  stepKey,
-}: {
-  flow: WalkFlow;
-  title: string;
-  detail: string;
-  log: LogLine[];
-  tech: string[];
-  stepIndex: number;
-  stepKey: string;
-}) {
+/*
+  What the step means, and the trace of what the server did.
+
+  Every step of the flow is rendered into the same grid cell and only the active one is
+  visible, so the panel is always as tall as the flow's longest step: stepping never moves
+  the page, and a short flow doesn't leave a void. Only the active layer carries the
+  animation classes, so each step's heading and log replay as it becomes active.
+*/
+function Trace({ flow, stepIndex, announce }: { flow: WalkFlow; stepIndex: number; announce: boolean }) {
+  const steps: ReadonlyArray<VideoStep | ImageStep> = flow.steps;
+  const active = steps[stepIndex];
   return (
-    <aside className="flex min-h-[30rem] flex-col border border-line bg-surface sm:min-h-[26rem] lg:min-h-0">
-      <div key={`${stepKey}-head`} className="walk-in px-5 pt-5">
+    <aside className="flex flex-col border border-line bg-surface">
+      {/*
+        One persistent live region: the layers below swap visibility, which screen readers
+        don't announce reliably. It stays polite and goes empty during autoplay, because
+        flipping aria-live together with the text is dropped by some screen readers.
+      */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {announce && active ? `Step ${stepIndex + 1} of ${steps.length}: ${active.title}` : ""}
+      </p>
+      <div className="grid flex-1">
+        {steps.map((step, index) => (
+          <TraceStep
+            key={`${flow.id}-${index}`}
+            flowLabel={flow.label}
+            step={step}
+            index={index}
+            total={steps.length}
+            active={index === stepIndex}
+          />
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function TraceStep({
+  flowLabel,
+  step,
+  index,
+  total,
+  active,
+}: {
+  flowLabel: string;
+  step: VideoStep | ImageStep;
+  index: number;
+  total: number;
+  active: boolean;
+}) {
+  const enter = active ? "walk-in" : "";
+  return (
+    <div
+      className={`flex flex-col [grid-area:1/1] ${active ? "" : "invisible"}`}
+      aria-hidden={active ? undefined : true}
+    >
+      <div className={`px-5 pt-5 ${enter}`}>
         <p className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-          <span>{flow.label}</span>
+          <span>{flowLabel}</span>
           <span className="tabular-nums">
-            {String(stepIndex + 1).padStart(2, "0")} / {String(flow.steps.length).padStart(2, "0")}
+            {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>
         </p>
-        <h4 className="mt-2 font-display text-lg leading-snug tracking-tight text-ink" aria-live="polite">
-          {title}
-        </h4>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink-dim">{detail}</p>
+        <h4 className="mt-2 font-display text-lg leading-snug tracking-tight text-ink">{step.title}</h4>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-dim">{step.detail}</p>
       </div>
 
       <div className="mt-4 flex flex-1 flex-col border-t border-line bg-ground px-4 py-3.5">
         <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-          <span aria-hidden="true" className="walk-live h-1.5 w-1.5 rounded-full bg-accent" />
+          <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full bg-accent ${active ? "walk-live" : ""}`} />
           Server trace
         </p>
-        <ol key={`${stepKey}-log`} className="mt-2.5 flex flex-col gap-1.5" aria-label="What the server does for this step">
-          {log.map((line, index) => (
+        <ol className="mt-2.5 flex flex-col gap-1.5" aria-label="What the server does for this step">
+          {step.log.map((line, lineIndex) => (
             <li
               key={line.text}
-              className={`walk-line grid grid-cols-[3rem_minmax(0,1fr)] gap-2 font-mono text-[11px] leading-[1.5] ${line.kind === "note" ? "italic" : ""}`}
-              style={{ "--i": index } as CSSProperties}
+              className={`grid grid-cols-[3rem_minmax(0,1fr)] gap-2 font-mono text-[11px] leading-[1.5] ${active ? "walk-line" : ""} ${line.kind === "note" ? "italic" : ""}`}
+              style={{ "--i": lineIndex } as CSSProperties}
             >
               <span className={`uppercase tracking-[0.08em] ${kindTone[line.kind]}`}>{kindLabel[line.kind]}</span>
               <span className={line.kind === "note" ? "text-ink-faint" : "text-ink"}>{line.text}</span>
             </li>
           ))}
         </ol>
-        <div key={`${stepKey}-tech`} className="walk-in mt-auto flex flex-wrap gap-1.5 pt-4">
-          {tech.map((item) => (
+        <div className={`mt-auto flex flex-wrap gap-1.5 pt-4 ${enter}`}>
+          {step.tech.map((item) => (
             <span key={item} className="border border-line bg-surface px-1.5 py-0.5 font-mono text-[10px] text-ink-dim">
               {item}
             </span>
           ))}
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
