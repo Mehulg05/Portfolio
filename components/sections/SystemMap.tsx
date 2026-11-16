@@ -3,7 +3,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export function SystemMap() {
   return (
-    <section id="system-map" className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+    <section id="system-map" className="sheet-section">
       <SectionHeader
         label="Skills"
         title="Skills, and where I used them"

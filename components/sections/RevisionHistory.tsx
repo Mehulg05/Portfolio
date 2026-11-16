@@ -3,10 +3,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export function RevisionHistory() {
   return (
-    <section
-      id="revision-history"
-      className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28"
-    >
+    <section id="revision-history" className="sheet-section">
       <SectionHeader
         label="Timeline"
         title="How I got here"

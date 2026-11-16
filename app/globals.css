@@ -87,6 +87,54 @@ section[id] {
 }
 
 /*
+  The sheet's type and rhythm, named once so the sections cannot drift apart again.
+  `sheet-section` reads --section-pad-top rather than restating it: the scroll-margin
+  above only lands a heading under the header if the two are the same number.
+  Sizes are in rem so they follow the visitor's base font size (15px, 13px, 11px, 10px).
+*/
+@utility sheet-section {
+  margin-inline: auto;
+  max-width: var(--container-6xl);
+  padding: var(--section-pad-top) 1.25rem;
+  @media (min-width: 640px) {
+    padding-inline: 2rem;
+  }
+}
+
+/* Running copy in cards and timelines. */
+@utility text-body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+/* Secondary lines under a heading: institutions, places, footnotes. */
+@utility text-note {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Mono drawing-sheet labels: periods, sub-headings, captions. Colour stays separate. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* The same voice inside a bordered chip, a size down so the box stays tight. */
+@utility badge-mono {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* One reading width for paragraphs. */
+@utility measure {
+  max-width: 64ch;
+}
+
+/*
   Reveal-on-scroll. Content is visible by default and only hidden once JS has
   confirmed motion is allowed (`js-motion` is set by a blocking script in <head>),
   so crawlers, JS-off visitors and reduced-motion users always get the full page.
@@ -155,11 +203,6 @@ section[id] {
   animation: build-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: calc(var(--step, 0) * 90ms + 200ms);
 }
-.hero-word {
-  display: inline-block;
-  animation: build-rise 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
@@ -168,8 +211,7 @@ section[id] {
     transform: none;
     transition: none;
   }
-  .hero-rise,
-  .hero-word {
+  .hero-rise {
     animation: none;
   }
 }
@@ -302,6 +344,11 @@ section[id] {
   it against the foot of the portrait, and the portrait holds the right column across
   both rows. Below `lg` the grid collapses and the three stack in source order.
 */
+/* The hero has no section padding: #top (the skip link, the logo position) is scrollY 0. */
+#top {
+  scroll-margin-top: var(--header-h);
+}
+
 .hero-name {
   font-family: var(--font-display);
   font-weight: 700;
@@ -386,34 +433,11 @@ section[id] {
 }
 
 /*
-  Torch. A small light that follows the cursor across the whole hero — not just the
-  portrait. Two gradients in one layer: a tiny bright core (the "bulb", ~9px) and a
-  soft accent falloff around it (~170px) — deliberately small, so it reads as a torch
-  passing over the scene rather than a spotlight sitting on it. Both gradients share
-  the same --gx/--gy already written every frame by HeroPortrait's rAF loop, so this
-  layer costs zero extra JS and never drifts out of sync with the portrait's own mask.
-*/
-.hero-torch {
-  --gx: -999px;
-  --gy: -999px;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  background:
-    radial-gradient(circle 9px at var(--gx) var(--gy), color-mix(in srgb, var(--color-ink) 85%, transparent), transparent 100%),
-    radial-gradient(circle 170px at var(--gx) var(--gy), color-mix(in srgb, var(--color-accent) 16%, transparent) 0%, transparent 75%);
-}
-.hero-section.is-lit .hero-torch {
-  opacity: 1;
-}
-
-/*
-  Bright grid — a second copy of the schematic grid, in accent, revealed only inside a
-  small radius around the torch. Same --gx/--gy as the torch above, so the grid lines
-  brighten exactly where the light passes rather than as a separate effect layered on top.
+  Bright grid — a second copy of the schematic grid, in accent, revealed only in a small
+  radius around the pointer (--gx/--gy, written by HeroPortrait's rAF loop). It is the one
+  ambient answer to the cursor, and it tells the visitor the sheet is live before the
+  sketch hint does. A torch layer (a bright dot plus a glow) used to sit on top of it; it
+  read as a custom cursor and was removed.
 */
 .sheet-grid-bright {
   position: absolute;
@@ -423,8 +447,8 @@ section[id] {
   opacity: 0;
   transition: opacity 0.3s ease;
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 50%, transparent) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px);
   background-size: 72px 72px;
   background-position: center top;
   -webkit-mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
@@ -436,7 +460,7 @@ section[id] {
 
 /* The corner stamp cells brighten under a direct hover — the simplest honest way for a
    discrete, non-continuous element to answer the same pointer without a second coordinate
-   system fighting the torch's section-relative one. */
+   system fighting the grid's section-relative one. */
 .hero-stat {
   transition:
     border-color 0.25s ease,
@@ -451,7 +475,7 @@ section[id] {
 
 /*
   No fine hover means no spotlight: show the colour portrait outright and drop every
-  layer keyed to a moving cursor — the torch, the bright grid, and the glow it replaced.
+  layer keyed to a moving cursor.
 
   The query is the exact negation of HeroPortrait's own gate, `(hover: hover) and
   (pointer: fine)`. A bare `(hover: none)` missed devices that report hover with a coarse
@@ -462,7 +486,6 @@ section[id] {
     filter: none;
   }
   .hero-portrait-colour,
-  .hero-torch,
   .sheet-grid-bright {
     display: none;
   }
@@ -570,7 +593,6 @@ section[id] {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-portrait-colour,
-  .hero-torch,
   .sheet-grid-bright {
     transition: none;
   }
@@ -851,11 +873,7 @@ html[data-thread-open].lenis.lenis-stopped {
   transform: rotate(-38deg);
 }
 
-/*
-  The pin board: a dotted board with index cards hung on pushpins. Each card tilts by its
-  own --tilt about the pin; use-pin-swing animates the same transform on desktop and
-  removes it when the card is still again, so the CSS tilt is the rest pose.
-*/
+/* The pin board: a dotted board with index cards hung on pushpins, each at its own --tilt. */
 .pin-board {
   background-color: var(--color-surface);
   background-image: radial-gradient(var(--color-line) 1px, transparent 1.2px);
@@ -868,16 +886,6 @@ html[data-thread-open].lenis.lenis-stopped {
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 1px 0 rgba(0, 0, 0, 0.4),
     0 12px 24px -14px rgba(0, 0, 0, 0.9);
-}
-.pin-card-live {
-  cursor: grab;
-  user-select: none;
-}
-.pin-card-live.is-dragging {
-  cursor: grabbing;
-}
-.pin-card.is-swinging {
-  will-change: transform;
 }
 .pin-head {
   background: radial-gradient(circle at 35% 30%, #ffe0cc, var(--color-redline) 40%, #b0491c 100%);
@@ -1063,7 +1071,7 @@ html[data-thread-open].lenis.lenis-stopped {
 /*
   Sheet sketch (SheetSketch.tsx). The empty grid takes a pencil, so the pointer is a
   crosshair there; text keeps its I-beam and links their hand. The hint shows only
-  while the torch is lit, that is while the pointer is over the hero.
+  while the hero is lit, that is while the pointer is over it.
 */
 .hero-section.is-sketchable {
   cursor: crosshair;
