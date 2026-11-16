@@ -8,21 +8,55 @@
   out line by line, and the step rail fills. Video steps follow the recording's clock.
 */
 
-/* Live status: a slow ping behind the dot. */
+/* Live status: a slow, faint ping behind the dot. Kept small: on a 6px dot a 3x halo reads as a blob. */
 .js-motion .live-dot::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 9999px;
   background: var(--color-accent);
-  animation: live-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.45;
+  animation: live-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 @keyframes live-ping {
   75%,
   100% {
-    transform: scale(3);
+    transform: scale(2.4);
     opacity: 0;
   }
+}
+
+/*
+  Role tabs on a narrow screen scroll sideways. While tabs are hidden past an edge (the
+  component sets data-fade-start / data-fade-end), that edge fades out as a cue. Nothing
+  fades when every tab fits.
+*/
+.walk-tabs {
+  --fade-start: 0px;
+  --fade-end: 0px;
+}
+.walk-tabs[data-fade-start] {
+  --fade-start: 2.5rem;
+}
+.walk-tabs[data-fade-end] {
+  --fade-end: 2.5rem;
+}
+.walk-tabs[data-fade-start],
+.walk-tabs[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
 }
 
 /* The frame lifts a little under the pointer. */
@@ -159,6 +193,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .live-dot::after {
+    display: none;
+  }
   .live-dot::after,
   .walk-click,
   .walk-in,
