@@ -13,6 +13,7 @@ const READ_LINE = 0.35;
 
 export function SiteHeader() {
   const [activeId, setActiveId] = useState<string>(sections[0].id);
+  const headerRef = useRef<HTMLElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
@@ -69,8 +70,15 @@ export function SiteHeader() {
       setActiveId(current < 0 ? sections[0].id : navSections[current].id);
     };
 
+    // Anchor targets land under the header by this much (scroll-margin-top in globals.css).
+    const publishHeight = () => {
+      const height = headerRef.current?.getBoundingClientRect().height;
+      if (height) document.documentElement.style.setProperty("--header-h", `${Math.round(height)}px`);
+    };
+
     // A disclosure opening or a pinned section changing height moves every section below it.
     const resizeObserver = new ResizeObserver(() => {
+      publishHeight();
       layout();
       refreshScrollProgress();
     });
@@ -80,6 +88,7 @@ export function SiteHeader() {
     layout();
     const unsubscribe = observeScrollProgress(body, paint);
     resizeObserver.observe(body);
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
     window.addEventListener("resize", onResize);
     window.visualViewport?.addEventListener("resize", onResize);
 
@@ -92,7 +101,7 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
+    <header ref={headerRef} className="sticky top-0 z-50 border-b border-line bg-ground/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-1.5 sm:px-8 lg:gap-6 lg:py-3">
         {/*
           Below lg the same links sit in one row that scrolls sideways, so a phone gets a

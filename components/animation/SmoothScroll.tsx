@@ -1,68 +1,56 @@
 "use client";
 
-import type LenisType from "lenis";
 import { useEffect } from "react";
 import { registerSmoothScroll } from "@/lib/smooth-scroll";
 
+/*
+  Off on purpose. Chrome, Edge, Firefox and Safari already ease a mouse wheel, and a
+  trackpad brings its own momentum, so a second lerp on top only adds lag between the hand
+  and the page. lib/motion/smooth-scroll.ts is kept, tested and ready behind this switch;
+  the module is a separate chunk and is not downloaded while the switch is off.
+
+  Anchor links need nothing from here: they are native, with scroll-margin-top in
+  globals.css, so deep links, back/forward and keyboard focus all behave as the platform
+  intends.
+*/
+const SMOOTH_WHEEL = false;
+
+/* Desktop mice only: never touch, never narrow screens, never under reduced motion. */
+const WHEEL_QUERY =
+  "(prefers-reduced-motion: no-preference) and (min-width: 1024px) and (hover: hover) and (pointer: fine)";
+
 export function SmoothScroll() {
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let lenis: LenisType | null = null;
+    if (!SMOOTH_WHEEL) return;
+
+    const media = window.matchMedia(WHEEL_QUERY);
+    let destroy: (() => void) | null = null;
     let cancelled = false;
 
-    // Kept out of the initial bundle — nothing in the first paint depends on it.
     const enable = async () => {
-      if (lenis) return;
-      document.documentElement.classList.add("js-motion");
-      const { default: Lenis } = await import("lenis");
-      if (cancelled) return;
-      // Anchors are handled below, not by Lenis, so both paths land in the same place.
-      lenis = new Lenis({ duration: 1.05, autoRaf: true });
-      // Published so a modal can pause the wheel while it holds the screen.
-      registerSmoothScroll(lenis);
+      if (destroy) return;
+      const { createSmoothScroll } = await import("@/lib/motion/smooth-scroll");
+      if (cancelled || destroy || !media.matches) return;
+      const controller = createSmoothScroll();
+      registerSmoothScroll(controller);
+      destroy = () => {
+        controller.destroy();
+        registerSmoothScroll(null);
+      };
     };
 
     const disable = () => {
-      document.documentElement.classList.remove("js-motion");
-      lenis?.destroy();
-      lenis = null;
-      registerSmoothScroll(null);
+      destroy?.();
+      destroy = null;
     };
 
-    /*
-      In-page links land on the section's heading, just under the sticky header. Aiming at
-      the section itself left its top padding (80–112px) as empty space above the heading.
-    */
-    const onClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0) return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href^="#"]');
-      const id = link?.getAttribute("href")?.slice(1);
-      const section = id ? document.getElementById(id) : null;
-      // #top is the skip link: left native so keyboard focus moves with it.
-      if (!link || !id || !section || id === "top") return;
-      event.preventDefault();
-
-      const heading = section.querySelector("header, h2") ?? section;
-      const bar = document.querySelector("header.sticky")?.getBoundingClientRect().height ?? 0;
-      const top = heading.getBoundingClientRect().top + window.scrollY - bar - 16;
-
-      if (lenis) lenis.scrollTo(top);
-      else window.scrollTo({ top, behavior: media.matches ? "auto" : "smooth" });
-      history.pushState(null, "", `#${id}`);
-    };
-    document.addEventListener("click", onClick);
-
-    if (media.matches) disable();
-    else enable();
-
-    const onChange = () => (media.matches ? disable() : enable());
-    media.addEventListener("change", onChange);
+    const sync = () => (media.matches ? enable() : disable());
+    sync();
+    media.addEventListener("change", sync);
 
     return () => {
       cancelled = true;
-      document.removeEventListener("click", onClick);
-      media.removeEventListener("change", onChange);
+      media.removeEventListener("change", sync);
       disable();
     };
   }, []);
