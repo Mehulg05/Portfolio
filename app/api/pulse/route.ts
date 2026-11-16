@@ -1,9 +1,10 @@
 import { after } from "next/server";
 import { isAdminHost } from "@/lib/admin/host";
+import { clientIp } from "@/lib/contact/abuse";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { countRecentViews, insertPageView, pruneOldPageViews, recordLeave } from "@/lib/pulse/db";
 import { validatePulse, type PulseEvent } from "@/lib/pulse/validate";
-import { visitorCountry, visitorHash } from "@/lib/pulse/visitor";
+import { beaconSource, visitorCountry, visitorKeys, type BeaconSource } from "@/lib/pulse/visitor";
 
 // postgres.js and node:crypto need Node, not the edge runtime.
 export const runtime = "nodejs";
@@ -18,12 +19,14 @@ export const runtime = "nodejs";
 const maxBodyBytes = 4 * 1024;
 
 /*
-  Views per visitor hash per hour. Only views are limited: a leave updates the row its
-  view created and never inserts, so a script that floods leaves can only rewrite its own
-  rows (the update matches on visitor_hash). Count-then-insert can overshoot by the
-  requests in flight, which is fine for a counter nobody bills on.
+  Views per hour, limited twice: per visitor (ip + user agent) and per source network
+  (ip alone, IPv6 as its /64), so rotating the user agent does not buy a fresh bucket. The
+  source cap is higher because an office or a phone carrier puts many people behind one
+  address. A leave updates the row its view created and never inserts, so a script that
+  floods leaves can only rewrite its own rows (the update matches on visitor_hash).
+  Count-then-insert can overshoot by the requests in flight, fine for a counter nobody bills on.
 */
-const viewWindow = { seconds: 60 * 60, max: 60 };
+const viewWindow = { seconds: 60 * 60, perVisitor: 60, perSource: 240 };
 const retentionDays = 90;
 const pruneChance = 0.01;
 
@@ -54,6 +57,8 @@ function isLocalHost(hostname: string) {
   which the per-visitor limit bounds.
 */
 function isCountedRequest(request: Request) {
+  // The client already sends nothing under DNT or GPC; this covers stale bundles and hand-made requests.
+  if (request.headers.get("sec-gpc") === "1" || request.headers.get("dnt") === "1") return false;
   const hostHeader = request.headers.get("host");
   if (isAdminHost(hostHeader)) return false;
   const hostname = hostnameOf(hostHeader);
@@ -121,13 +126,15 @@ async function readEvent(request: Request) {
   return result.ok ? result.value : null;
 }
 
-async function store(event: PulseEvent, hash: string, country: string | null) {
+async function store(event: PulseEvent, source: BeaconSource, country: string | null) {
+  const keys = await visitorKeys(source);
   if (event.kind === "leave") {
-    await recordLeave(event, hash);
+    await recordLeave(event, keys.visitorHash);
     return;
   }
-  if ((await countRecentViews(hash, viewWindow.seconds)) >= viewWindow.max) return;
-  await insertPageView({ ...event, visitorHash: hash, country });
+  const recent = await countRecentViews(keys, viewWindow.seconds);
+  if (recent.visitor >= viewWindow.perVisitor || recent.source >= viewWindow.perSource) return;
+  await insertPageView({ ...event, ...keys, country });
 }
 
 // Error objects from postgres.js carry the query parameters; the message alone is enough.
@@ -139,13 +146,13 @@ export async function POST(request: Request) {
   if (!isDatabaseConfigured() || !isCountedRequest(request)) return noContent();
 
   const event = await readEvent(request);
-  const hash = event ? visitorHash(request) : null;
-  if (!event || !hash) return noContent();
+  if (!event) return noContent();
+  const source = beaconSource(request, clientIp(request));
   const country = visitorCountry(request);
 
   after(async () => {
     try {
-      await store(event, hash, country);
+      await store(event, source, country);
     } catch (error) {
       logFailure("record a beacon", error);
     }

@@ -2,6 +2,7 @@ import { type MessagesUrl, messagesHref, safeReturnState } from "@/app/admin/mes
 import { hasAdminSession, isSameOriginOrUnspecified } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { type MessageStatus, deleteMessage, isMessageStatus, isUuid, setMessageStatus } from "@/lib/db/messages";
+import { errorClass } from "@/lib/admin/health";
 
 // postgres.js needs TCP sockets, and the session check needs node:crypto.
 export const runtime = "nodejs";
@@ -53,7 +54,7 @@ export async function POST(request: Request, { params }: RouteContext<"/api/admi
   try {
     found = action.kind === "delete" ? await deleteMessage(id) : await setMessageStatus(id, action.status);
   } catch (error) {
-    console.error("[messages] action failed", action.kind, error);
+    console.error("[messages] action failed", action.kind, errorClass(error));
     return text("Could not update the message.", 500);
   }
   if (!found) return text("No such message.", 404);

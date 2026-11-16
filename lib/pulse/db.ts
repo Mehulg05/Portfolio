@@ -2,7 +2,7 @@ import "server-only";
 import { getDb } from "@/lib/db/client";
 import type { PulseLeave, PulseView } from "@/lib/pulse/validate";
 
-export type NewPageView = PulseView & { visitorHash: string; country: string | null };
+export type NewPageView = PulseView & { visitorHash: string; sourceHash: string; country: string | null };
 
 /*
   `day` is written explicitly as the UTC date rather than left to the column default,
@@ -11,9 +11,9 @@ export type NewPageView = PulseView & { visitorHash: string; country: string | n
 */
 export async function insertPageView(view: NewPageView) {
   await getDb()`
-    insert into page_views (id, day, visitor_hash, path, referrer_host, screen, country)
+    insert into page_views (id, day, visitor_hash, source_hash, path, referrer_host, screen, country)
     values (
-      ${view.viewId}, (now() at time zone 'utc')::date, ${view.visitorHash},
+      ${view.viewId}, (now() at time zone 'utc')::date, ${view.visitorHash}, ${view.sourceHash},
       ${view.path}, ${view.referrerHost}, ${view.screen}, ${view.country}
     )
     on conflict (id) do nothing
@@ -40,14 +40,16 @@ export async function recordLeave(leave: PulseLeave, visitorHash: string) {
   `;
 }
 
-/** Views from one visitor hash in the last `windowSeconds`, on the (visitor_hash, created_at) index. */
-export async function countRecentViews(visitorHash: string, windowSeconds: number) {
-  const [row] = await getDb()<{ count: number }[]>`
-    select count(*)::int as count from page_views
-    where visitor_hash = ${visitorHash}
-      and created_at > now() - make_interval(secs => ${windowSeconds})
+/** Recent views by visitor (ip + user agent) and by source (network only), in one round trip on their indexes. */
+export async function countRecentViews(keys: { visitorHash: string; sourceHash: string }, windowSeconds: number) {
+  const [row] = await getDb()<{ visitor: number; source: number }[]>`
+    select
+      (select count(*)::int from page_views
+        where visitor_hash = ${keys.visitorHash} and created_at > now() - make_interval(secs => ${windowSeconds})) as visitor,
+      (select count(*)::int from page_views
+        where source_hash = ${keys.sourceHash} and created_at > now() - make_interval(secs => ${windowSeconds})) as source
   `;
-  return row?.count ?? 0;
+  return { visitor: row?.visitor ?? 0, source: row?.source ?? 0 };
 }
 
 /** Deletes page views older than the retention window and returns how many went. */

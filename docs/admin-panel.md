@@ -12,6 +12,6 @@
 
 **Cron.** `vercel.json` schedules `GET /api/cron` daily (Hobby allows one). It prunes page views older than 90 days and old sign-in attempts, and retries pending email notifications. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
 
-**Pulse privacy.** No cookies, no local storage and no stored IP addresses: a visitor is an HMAC of IP and user agent keyed with a salt that changes every day, so visits cannot be linked across days. Browsers that send Do Not Track or Global Privacy Control send nothing at all, and the admin host is never counted. Rows are deleted after 90 days.
+**Pulse privacy.** No cookies, no local storage and no stored IP addresses: a visitor is an HMAC of IP and user agent keyed with a random salt that is generated each day and deleted when the day ends, so visits cannot be linked across days, not even by the owner. Browsers that send Do Not Track or Global Privacy Control send nothing at all, and the admin host is never counted. Rows are deleted after 90 days.
 
 **Local.** Add `ADMIN_HOST=admin.localhost` to `.env.local`, run `npm run db:dev`, `npm run db:migrate`, `npm run dev`, and open `http://admin.localhost:3000`. `PULSE_DEV=1` records your own local page views; `npm run db:prune` applies retention by hand.

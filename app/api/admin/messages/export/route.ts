@@ -3,6 +3,7 @@ import { messageCsvFilename, messageCsvHeader, messageCsvRow } from "@/lib/admin
 import { hasAdminSession } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { type MessagePage, type MessagePageQuery, listMessagesPage } from "@/lib/db/messages";
+import { errorClass } from "@/lib/admin/health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
   try {
     firstPage = await listMessagesPage(query);
   } catch (error) {
-    console.error("[messages] export failed", error);
+    console.error("[messages] export failed", errorClass(error));
     return text("Could not read messages.", 500);
   }
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
         controller.enqueue(encoder.encode(encodePage(page)));
         if (!cursor) controller.close();
       } catch (error) {
-        console.error("[messages] export stream failed", error);
+        console.error("[messages] export stream failed", errorClass(error));
         controller.error(error);
       }
     },

@@ -32,7 +32,8 @@ export const MIN_SECRET_LENGTH = 32;
 export type AdminSession = { expiresAt: Date };
 
 function readSecret() {
-  const secret = process.env.INBOX_SECRET;
+  // Trimmed: a trailing newline from a pasted env value would otherwise make sign-in impossible.
+  const secret = process.env.INBOX_SECRET?.trim();
   return secret && secret.length >= MIN_SECRET_LENGTH ? secret : null;
 }
 

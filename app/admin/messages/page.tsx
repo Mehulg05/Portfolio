@@ -5,6 +5,7 @@ import { BackToList, MessageDetail } from "@/app/admin/messages/MessageDetail";
 import { Notice } from "@/app/admin/messages/Notice";
 import { type MessagesState, type MessagesUrl, messagesHref, parseMessagesParams } from "@/app/admin/messages/url";
 import { hasAdminSession } from "@/lib/admin/auth";
+import { errorClass } from "@/lib/admin/health";
 import {
   type Message,
   type MessageCounts,
@@ -40,7 +41,7 @@ async function load(url: MessagesUrl): Promise<Loaded | null> {
     ]);
     return { page, counts, selected, undo };
   } catch (error) {
-    console.error("[messages] loading the page failed", error);
+    console.error("[messages] loading the page failed", errorClass(error));
     return null;
   }
 }

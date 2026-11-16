@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { getDb, isDatabaseConfigured } from "@/lib/db/client";
+import { errorClass } from "@/lib/admin/health";
 
 /*
   The admin layout needs the unread count twice per request (the document title and the
@@ -17,7 +18,7 @@ export const countUnreadMessages = cache(async (): Promise<number | null> => {
     `;
     return rows[0]?.count ?? 0;
   } catch (error) {
-    console.error("[admin] counting unread messages failed", error);
+    console.error("[admin] counting unread messages failed", errorClass(error));
     return null;
   }
 });

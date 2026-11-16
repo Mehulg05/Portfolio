@@ -71,8 +71,8 @@ function PrivacyNote() {
   return (
     <p className="mt-8 max-w-3xl border-t border-line pt-4 font-mono text-[11px] leading-relaxed text-ink-faint">
       Collected first-party by this site, without cookies. IP addresses are never stored: the visitor id is an HMAC
-      keyed with a salt that includes the date, so it resets every day and a visitor cannot be followed from one day
-      to the next. Browsers sending Do Not Track or Global Privacy Control are not counted. Rows older than 90 days
+      keyed with a random salt that exists for one day and is then deleted, so nobody, me included, can follow a
+      visitor from one day to the next. Browsers sending Do Not Track or Global Privacy Control are not counted. Rows older than 90 days
       are deleted by the daily cron.
     </p>
   );

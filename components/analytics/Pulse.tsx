@@ -5,8 +5,8 @@ import { useEffect } from "react";
 
 /*
   Self-hosted page analytics: one beacon when a page opens, one when it is left. No
-  cookies, no storage, no fingerprinting; the server derives a visitor hash that rotates
-  daily. Anyone asking not to be tracked (Do Not Track, Global Privacy Control) sends
+  cookies, no storage, no fingerprinting; the server derives a visitor hash keyed with a
+  random salt that is deleted after one day. Anyone asking not to be tracked (Do Not Track, Global Privacy Control) sends
   nothing at all, and neither does the admin host.
 */
 

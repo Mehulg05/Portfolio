@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/login-attempts";
 import { clientIp, hashIp, isIpHashConfigured } from "@/lib/contact/abuse";
 import { isDatabaseConfigured } from "@/lib/db/client";
+import { errorClass } from "@/lib/admin/health";
 
 // node:crypto for the HMAC and timingSafeEqual, TCP for postgres.js.
 export const runtime = "nodejs";
@@ -62,7 +63,7 @@ async function isLockedOut(ipHash: string) {
   try {
     return (await countRecentFailures(ipHash, LOGIN_WINDOW_SECONDS)) >= LOGIN_FAILURE_LIMIT;
   } catch (error) {
-    console.error("[admin] counting sign-in failures failed", error);
+    console.error("[admin] counting sign-in failures failed", errorClass(error));
     return false;
   }
 }
@@ -71,7 +72,7 @@ async function record(ipHash: string, succeeded: boolean) {
   try {
     await recordLoginAttempt(ipHash, succeeded);
   } catch (error) {
-    console.error("[admin] recording a sign-in attempt failed", error);
+    console.error("[admin] recording a sign-in attempt failed", errorClass(error));
   }
 }
 
