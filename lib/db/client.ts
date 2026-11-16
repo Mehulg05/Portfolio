@@ -39,7 +39,8 @@ export function getDb() {
   client ??= postgres(url, {
     max: 1,
     idle_timeout: 20,
-    connect_timeout: 10,
+    // Fail fast: each sequential query would otherwise pay the full wait during an outage.
+    connect_timeout: 5,
     prepare: false,
     onnotice: () => {},
     ...searchPathOption(url),

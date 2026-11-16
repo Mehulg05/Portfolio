@@ -74,7 +74,8 @@ export function buildNotification({ name, email, message, to, inboxUrl }: Notifi
  * row as notified on true. Without RESEND_API_KEY this is a no-op that returns false.
  */
 export async function sendNotification(input: NotificationInput): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
+  // Trimmed like every other read of the key: a pasted newline must not break the header.
+  const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     console.info("contact: RESEND_API_KEY is not set, skipping the email notification.");
     return false;
@@ -94,7 +95,7 @@ export async function sendNotification(input: NotificationInput): Promise<boolea
     console.error(`contact: Resend answered ${response.status}.`, detail.slice(0, 500));
     return false;
   } catch (error) {
-    console.error("contact: email notification failed.", error);
+    console.error("contact: email notification failed.", error instanceof Error ? error.name : "unknown error");
     return false;
   }
 }

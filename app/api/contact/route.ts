@@ -1,12 +1,13 @@
 import { after } from "next/server";
 import { clientIp, hashIp, isTrustedContactOrigin } from "@/lib/contact/abuse";
 import { isContactConfigured } from "@/lib/contact/config";
-import { sendNotification } from "@/lib/contact/notify";
+import { notifyOwner } from "@/lib/contact/owner";
 import { contactLimits, type ContactErrorCode, type ContactField, type ContactResponse } from "@/lib/contact/types";
 import { isHoneypotFilled, validateContact, type ContactSubmission } from "@/lib/contact/validate";
-import { profile } from "@/lib/content/profile";
-import { countRecentByEmail, countRecentByIp, insertMessage, markNotified } from "@/lib/db/messages";
-import { siteUrl } from "@/lib/site";
+import { insertMessageWithinLimits, markNotified, type SubmissionLimits } from "@/lib/db/messages";
+import { errorClass } from "@/lib/http/error";
+import { jsonError } from "@/lib/http/response";
+import { contentTypeIs, parseJsonSafe, readBodyLimited } from "@/lib/http/request";
 
 // postgres.js and node:crypto need Node, not the edge runtime.
 export const runtime = "nodejs";
@@ -15,53 +16,19 @@ export const runtime = "nodejs";
 const maxBodyBytes = 16 * 1024;
 const maxUserAgentLength = 300;
 
-const ipWindow = { seconds: 60 * 60, max: 5 };
-const emailWindow = { seconds: 24 * 60 * 60, max: 3 };
+/*
+  Per sender (one IP hash, or one address) and across everyone. The global numbers sit under
+  Resend's free 100 emails a day and keep the form from being used to fill the database
+  shared with Alpha Academy. A legitimate visitor never comes near them.
+*/
+const limits: SubmissionLimits = { ipHour: 5, ipDay: 10, emailDay: 3, globalHour: 30, globalDay: 80 };
 
-function reply(status: number, body: ContactResponse, headers?: HeadersInit) {
-  return Response.json(body, { status, headers });
+function reply(status: number, body: ContactResponse) {
+  return Response.json(body, { status });
 }
 
 function failure(status: number, code: ContactErrorCode, message: string, field?: ContactField) {
-  return reply(status, field ? { ok: false, code, message, field } : { ok: false, code, message });
-}
-
-function isJson(request: Request) {
-  const type = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
-  return type === "application/json";
-}
-
-/**
- * The body as text, or null when it is too large. Reads the stream itself and stops at the
- * limit, because a chunked upload has no Content-Length and request.text() would buffer it all.
- */
-async function readBody(request: Request) {
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBodyBytes) return null;
-  if (!request.body) return "";
-
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > maxBodyBytes) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(value);
-  }
-  return new TextDecoder().decode(Buffer.concat(chunks));
-}
-
-function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
-  try {
-    return { ok: true, value: JSON.parse(text) };
-  } catch {
-    return { ok: false };
-  }
+  return field ? reply(status, { ok: false, code, message, field }) : jsonError(status, code, message);
 }
 
 /*
@@ -70,22 +37,6 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 */
 function isTooFast(elapsedMs: number | null) {
   return elapsedMs === null || elapsedMs < contactLimits.minFillMs;
-}
-
-/*
-  Count-then-insert is not atomic: concurrent requests from one IP can all read a count of
-  4 and all insert, overshooting the limit by the number of requests in flight. That is
-  acceptable here: the limit exists to stop a form being used as a spam cannon, a handful of
-  extra rows does not defeat it, and an exact limit would need a lock or a counter table
-  for a form that gets a few messages a week.
-
-  Returns the Retry-After seconds when a window is full. That is the window length, an
-  upper bound rather than the exact moment the oldest row expires, which keeps it to one query.
-*/
-async function rateLimitRetryAfter(ipHash: string, email: string) {
-  if ((await countRecentByIp(ipHash, ipWindow.seconds)) >= ipWindow.max) return ipWindow.seconds;
-  if ((await countRecentByEmail(email, emailWindow.seconds)) >= emailWindow.max) return emailWindow.seconds;
-  return null;
 }
 
 function userAgent(request: Request) {
@@ -99,19 +50,12 @@ function userAgent(request: Request) {
 */
 function notifyLater(id: string, submission: ContactSubmission) {
   after(async () => {
-    const sent = await sendNotification({
-      name: submission.name,
-      email: submission.email,
-      message: submission.message,
-      // An empty value left in the dashboard should fall back too, hence || over ??.
-      to: process.env.CONTACT_TO_EMAIL || profile.email,
-      inboxUrl: `${siteUrl}/inbox`,
-    });
+    const sent = await notifyOwner({ name: submission.name, email: submission.email, message: submission.message });
     if (!sent) return;
     try {
       await markNotified(id);
     } catch (error) {
-      console.error("contact: could not mark the message as notified.", error);
+      console.error("contact: could not mark the message as notified.", errorClass(error));
     }
   });
 }
@@ -125,10 +69,10 @@ export async function POST(request: Request) {
     return failure(403, "forbidden", "This form only accepts messages from the site itself.");
   }
 
-  if (!isJson(request)) return failure(400, "invalid", "The request must be JSON.");
-  const text = await readBody(request);
+  if (!contentTypeIs(request, "application/json")) return failure(400, "invalid", "The request must be JSON.");
+  const text = await readBodyLimited(request, maxBodyBytes);
   if (text === null) return failure(400, "invalid", "The message is too large to send.");
-  const parsed = parseJson(text);
+  const parsed = parseJsonSafe(text);
   if (!parsed.ok) return failure(400, "invalid", "The request could not be read.");
 
   // Same answer a person gets, so the bot learns nothing and does not retry with a fix.
@@ -147,24 +91,25 @@ export async function POST(request: Request) {
 
   let id: string;
   try {
-    const ipHash = hashIp(clientIp(request));
-    const retryAfter = await rateLimitRetryAfter(ipHash, submission.email);
-    if (retryAfter !== null) {
-      return reply(
-        429,
-        { ok: false, code: "rate_limited", message: "Too many messages for now. Please try again later." },
-        { "Retry-After": String(retryAfter) },
-      );
+    const result = await insertMessageWithinLimits(
+      {
+        name: submission.name,
+        email: submission.email,
+        message: submission.message,
+        ipHash: hashIp(clientIp(request)),
+        userAgent: userAgent(request),
+      },
+      limits,
+    );
+    if (!result.ok) {
+      return jsonError(429, "rate_limited", "Too many messages for now. Please try again later.", {
+        "Retry-After": String(result.retryAfterSeconds),
+      });
     }
-    id = await insertMessage({
-      name: submission.name,
-      email: submission.email,
-      message: submission.message,
-      ipHash,
-      userAgent: userAgent(request),
-    });
+    id = result.id;
   } catch (error) {
-    console.error("contact: database error.", error);
+    // The driver's error can carry the submission itself; only its class is logged.
+    console.error("contact: database error.", errorClass(error));
     return failure(500, "server_error", "Something went wrong saving your message. Please try again.");
   }
 

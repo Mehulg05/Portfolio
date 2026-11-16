@@ -1,7 +1,10 @@
-import { createHash, timingSafeEqual } from "node:crypto";
-import { errorClass } from "@/lib/admin/health";
+import { MIN_SECRET_LENGTH } from "@/lib/admin/auth";
 import { pruneStaleLoginAttempts, retryPendingNotifications } from "@/lib/admin/maintenance";
 import { isDatabaseConfigured } from "@/lib/db/client";
+import { PAGE_VIEW_RETENTION_DAYS } from "@/lib/db/retention";
+import { errorClass } from "@/lib/http/error";
+import { jsonError } from "@/lib/http/response";
+import { constantTimeEquals } from "@/lib/http/secret";
 import { pruneOldPageViews } from "@/lib/pulse/db";
 
 /*
@@ -14,15 +17,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const PAGE_VIEW_RETENTION_DAYS = 90;
-
-function sha256(value: string) {
-  return createHash("sha256").update(value, "utf8").digest();
-}
-
-// Hashed first so the comparison is constant-time and does not leak the secret's length.
 function isAuthorised(header: string | null, secret: string) {
-  return header !== null && timingSafeEqual(sha256(header), sha256(`Bearer ${secret}`));
+  return header !== null && constantTimeEquals(header, `Bearer ${secret}`);
 }
 
 type Task<T> = { ok: true; result: T } | { ok: false; error: string };
@@ -39,11 +35,11 @@ async function run<T>(task: () => Promise<T>): Promise<Task<T>> {
 export async function GET(request: Request) {
   // Compared untrimmed: Vercel sends the value exactly as stored.
   const secret = process.env.CRON_SECRET;
-  if (!secret?.trim()) return Response.json({ ok: false, error: "CRON_SECRET is not set." }, { status: 503 });
-  if (!isAuthorised(request.headers.get("authorization"), secret)) {
-    return Response.json({ ok: false, error: "Unauthorised." }, { status: 401 });
+  // A short or missing secret answers exactly like a wrong one: nothing says whether it is set.
+  if (!secret || secret.trim().length < MIN_SECRET_LENGTH || !isAuthorised(request.headers.get("authorization"), secret)) {
+    return jsonError(401, "unauthorised", "Unauthorised.");
   }
-  if (!isDatabaseConfigured()) return Response.json({ ok: false, error: "DATABASE_URL is not set." }, { status: 503 });
+  if (!isDatabaseConfigured()) return jsonError(503, "unconfigured", "DATABASE_URL is not set.");
 
   const pageViews = await run(() => pruneOldPageViews(PAGE_VIEW_RETENTION_DAYS));
   const loginAttempts = await run(pruneStaleLoginAttempts);

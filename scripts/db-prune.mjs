@@ -8,6 +8,7 @@
 */
 import { connect, inSchema } from "./db-connect.mjs";
 
+// Same numbers as lib/db/retention.ts (PAGE_VIEW_RETENTION_DAYS, LOGIN_ATTEMPT_RETENTION_SECONDS); keep them in step.
 const pageViewDays = 90;
 const loginAttemptDays = 1;
 const sql = connect();

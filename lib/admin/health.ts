@@ -4,6 +4,7 @@ import path from "node:path";
 import { MIN_SECRET_LENGTH } from "@/lib/admin/auth";
 import { isResendConfigured } from "@/lib/admin/maintenance";
 import { getDb, isDatabaseConfigured } from "@/lib/db/client";
+import { errorClass } from "@/lib/http/error";
 
 /*
   Everything /health shows, gathered per request. Each probe fails on its own: a missing
@@ -64,11 +65,10 @@ export type Health = {
 
 const REPO_COMMIT_URL = "https://github.com/Mehulg05/Portfolio/commit/";
 const SHA_PATTERN = /^[0-9a-f]{7,40}$/i;
-const CODE_PATTERN = /^[A-Z0-9_]{2,24}$/i;
 
 const envSpec: Omit<EnvCheck, "state">[] = [
   { name: "DATABASE_URL", required: true, purpose: "messages, pulse, this page" },
-  { name: "IP_HASH_SALT", required: true, purpose: "contact rate limits, visitor hashes" },
+  { name: "IP_HASH_SALT", required: true, purpose: "contact rate limits and admin sign-in throttling" },
   { name: "INBOX_SECRET", required: true, purpose: `admin sign-in, at least ${MIN_SECRET_LENGTH} chars` },
   { name: "RESEND_API_KEY", required: false, purpose: "email on new messages" },
   { name: "CONTACT_TO_EMAIL", required: false, purpose: "recipient, falls back to the profile email" },
@@ -77,11 +77,7 @@ const envSpec: Omit<EnvCheck, "state">[] = [
   { name: "CRON_SECRET", required: true, purpose: "authorises the daily /api/cron run" },
 ];
 
-export function errorClass(error: unknown) {
-  if (!(error instanceof Error)) return typeof error;
-  const code = "code" in error ? error.code : undefined;
-  return typeof code === "string" && CODE_PATTERN.test(code) ? `${error.name} ${code}` : error.name;
-}
+export { errorClass };
 
 async function probe<T>(run: () => Promise<T>): Promise<Probe<T>> {
   try {
@@ -176,14 +172,18 @@ function deployInfo(): DeployInfo {
 }
 
 const notConfigured = { ok: false, error: "DATABASE_URL is not set" } as const;
+const skipped = { ok: false, error: "skipped: the database is unreachable" } as const;
 
 export async function getHealth(): Promise<Health> {
   const dbConfigured = isDatabaseConfigured();
   // Latency first and alone, so the parallel queries below do not queue behind it on the one connection.
   const db = dbConfigured ? await probe(measureLatency) : notConfigured;
-  const [migrations, notifications] = dbConfigured
-    ? await Promise.all([probe(migrationState), probe(notificationState)])
-    : [notConfigured, notConfigured];
+  // A dead database makes every further probe wait out the connect timeout, so they are skipped.
+  const [migrations, notifications] = !dbConfigured
+    ? [notConfigured, notConfigured]
+    : !db.ok
+      ? [skipped, skipped]
+      : await Promise.all([probe(migrationState), probe(notificationState)]);
 
   return {
     db,

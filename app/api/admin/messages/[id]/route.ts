@@ -2,22 +2,12 @@ import { type MessagesUrl, messagesHref, safeReturnState } from "@/app/admin/mes
 import { hasAdminSession, isSameOriginOrUnspecified } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { type MessageStatus, deleteMessage, isMessageStatus, isUuid, setMessageStatus } from "@/lib/db/messages";
-import { errorClass } from "@/lib/admin/health";
+import { errorClass } from "@/lib/http/error";
+import { readFormSafe } from "@/lib/http/request";
+import { textResponse as text } from "@/lib/http/response";
 
 // postgres.js needs TCP sockets, and the session check needs node:crypto.
 export const runtime = "nodejs";
-
-function text(body: string, status: number) {
-  return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
-}
-
-async function readForm(request: Request) {
-  try {
-    return await request.formData();
-  } catch {
-    return null;
-  }
-}
 
 type Action = { kind: "status"; status: MessageStatus } | { kind: "delete" };
 
@@ -46,7 +36,7 @@ export async function POST(request: Request, { params }: RouteContext<"/api/admi
   if (!isUuid(rawId)) return text("No such message.", 404);
   const id = rawId.toLowerCase();
 
-  const form = await readForm(request);
+  const form = await readFormSafe(request);
   const action = readAction(form);
   if (!action) return text("Send status=new|read|replied|archived or intent=delete.", 400);
 

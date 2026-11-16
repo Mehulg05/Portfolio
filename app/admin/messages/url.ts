@@ -4,6 +4,7 @@ import {
   isUuid,
   normaliseSearch,
 } from "@/lib/db/messages";
+import { isOneOf } from "@/lib/http/guards";
 
 /*
   The page's whole state lives in the URL (?status, q, cursor, id), so every view is a link,
@@ -37,7 +38,7 @@ function first(value: string | string[] | undefined) {
 }
 
 function isNotice(value: unknown): value is Notice {
-  return typeof value === "string" && (notices as readonly string[]).includes(value);
+  return isOneOf(notices, value);
 }
 
 export function parseMessagesParams(params: RawParams): MessagesUrl {

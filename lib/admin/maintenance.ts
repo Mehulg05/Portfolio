@@ -1,11 +1,10 @@
 import "server-only";
-import { adminUrl } from "@/lib/admin/host";
 import { pruneLoginAttempts } from "@/lib/admin/login-attempts";
 import { pruneLoginCodes } from "@/lib/admin/otp";
-import { sendNotification } from "@/lib/contact/notify";
-import { profile } from "@/lib/content/profile";
+import { notifyOwner } from "@/lib/contact/owner";
 import { getDb } from "@/lib/db/client";
 import { markNotified } from "@/lib/db/messages";
+import { LOGIN_ATTEMPT_RETENTION_SECONDS } from "@/lib/db/retention";
 
 /*
   Housekeeping shared by the daily cron and the "Retry notifications" button on /health.
@@ -14,7 +13,7 @@ import { markNotified } from "@/lib/db/messages";
 export const RETRY_LIMIT = 20;
 // Resend's default rate limit is 2 requests a second; sends are paced just under it.
 const SEND_SPACING_MS = 550;
-const LOGIN_ATTEMPT_RETENTION_SECONDS = 24 * 60 * 60;
+
 
 export type RetryResult = { tried: number; sent: number; configured: boolean };
 
@@ -46,12 +45,10 @@ export async function retryPendingNotifications(limit = RETRY_LIMIT): Promise<Re
     limit ${limit}
   `;
 
-  const to = process.env.CONTACT_TO_EMAIL || profile.email;
-  const inboxUrl = adminUrl("/messages");
   let sent = 0;
   for (const [index, row] of rows.entries()) {
     if (index > 0) await wait(SEND_SPACING_MS);
-    const ok = await sendNotification({ name: row.name, email: row.email, message: row.message, to, inboxUrl });
+    const ok = await notifyOwner({ name: row.name, email: row.email, message: row.message });
     if (!ok) continue;
     await markNotified(row.id);
     sent += 1;

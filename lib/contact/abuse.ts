@@ -38,29 +38,7 @@ export function hashIp(ip: string) {
   return createHmac("sha256", salt).update(ip).digest("hex");
 }
 
-/*
-  Vercel overwrites x-forwarded-for with the real client address, so its first entry is
-  trustworthy there. Elsewhere it is client-controlled, which at worst lets someone spread
-  their submissions across fake IPs; the per-email window still applies.
-*/
-export function clientIp(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const real = request.headers.get("x-real-ip")?.trim();
-  return networkOf(forwarded || real || "unknown");
-}
-
-/*
-  Every limiter keys on this, so an IPv6 address is cut to its /64: a single client usually
-  controls the whole /64 and could otherwise take a fresh bucket per address.
-*/
-function networkOf(ip: string) {
-  if (!ip.includes(":") || ip.includes(".")) return ip;
-  const [head = "", tail = ""] = ip.toLowerCase().split("::");
-  const front = head ? head.split(":") : [];
-  const back = tail ? tail.split(":") : [];
-  const groups = ip.includes("::") ? [...front, ...Array(Math.max(0, 8 - front.length - back.length)).fill("0"), ...back] : front;
-  return `${groups.slice(0, 4).map((group) => group.replace(/^0+(?=.)/, "")).join(":")}::/64`;
-}
+export { clientIp } from "@/lib/http/ip";
 
 function allowedOrigins() {
   const origins = new Set([new URL(siteUrl).origin]);

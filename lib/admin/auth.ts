@@ -1,28 +1,29 @@
 import "server-only";
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { errorClass } from "@/lib/http/error";
 import { adminOrigin } from "@/lib/admin/host";
+import { createSessionValue, isIssuedAfter, SESSION_LIFETIME_MS, verifySessionValue } from "@/lib/admin/session-core";
+import { getDb, isDatabaseConfigured } from "@/lib/db/client";
+import { constantTimeEquals } from "@/lib/http/secret";
 
 /*
   Auth for the private admin panel. There is one reader, so there are no accounts: the
   owner proves they hold the emailed one-time code (or, when email is not configured, the
   INBOX_SECRET recovery key) and gets a signed, expiring cookie.
 
-  The session value is `${expiresAtMs}.${hmacHex}` with HMAC-SHA256 keyed by INBOX_SECRET.
-  Nothing is stored server-side, so rotating INBOX_SECRET invalidates every session at
-  once: old signatures stop verifying under the new key. That is the sign-out-everywhere
-  button.
+  The session value is a signed `issuedAt.expiresAt` pair (lib/admin/session-core.ts), keyed
+  by a key derived from INBOX_SECRET. Signing out records a revocation point
+  (admin_session_state): any cookie issued before it stops working. Rotating INBOX_SECRET
+  also invalidates every session at once.
 
   The cookie is host-only (no Domain attribute), so it exists on the admin host and the
   public site never carries it.
 */
 
-export const ADMIN_COOKIE = "admin_session";
-export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
-
-const SESSION_LIFETIME_MS = ADMIN_SESSION_MAX_AGE_SECONDS * 1000;
-// Digits only, and short enough that Number() stays an exact integer.
-const SESSION_PATTERN = /^(\d{1,15})\.([0-9a-f]{64})$/;
+// __Host- pins the cookie to this exact host over HTTPS with Path=/, so a sibling
+// subdomain cannot plant or overwrite it. It needs Secure, which plain-http dev cannot do.
+export const ADMIN_COOKIE = process.env.NODE_ENV === "production" ? "__Host-admin_session" : "admin_session";
+export const ADMIN_SESSION_MAX_AGE_SECONDS = SESSION_LIFETIME_MS / 1000;
 
 /*
   Throttling caps guesses at a handful per window, but the real defence is a long random
@@ -38,7 +39,7 @@ function readSecret() {
   return secret && secret.length >= MIN_SECRET_LENGTH ? secret : null;
 }
 
-/** The signing key, also used to key the sign-in code hashes. Null when unset or too short. */
+/** The key that keys the sign-in code hashes. Null when unset or too short. */
 export function otpKey() {
   return readSecret();
 }
@@ -47,69 +48,75 @@ export function isAdminConfigured() {
   return readSecret() !== null;
 }
 
-function sha256(value: string) {
-  return createHash("sha256").update(value, "utf8").digest();
-}
-
-function sign(data: string, secret: string) {
-  return createHmac("sha256", secret).update(data, "utf8").digest();
-}
-
-/**
- * Constant-time comparison against INBOX_SECRET. Both sides are hashed first because
- * timingSafeEqual needs equal lengths, and comparing raw lengths would leak the secret's.
- */
+/** Constant-time comparison against INBOX_SECRET (the recovery key). */
 export function checkSecret(candidate: string) {
   const secret = readSecret();
   if (!secret) return false;
-  return timingSafeEqual(sha256(candidate), sha256(secret));
+  return constantTimeEquals(candidate, secret);
 }
 
-export function createSessionValue(now: number) {
+export function newSessionValue(now: number) {
   const secret = readSecret();
   if (!secret) throw new Error("INBOX_SECRET is not set.");
-
-  const expiresAt = String(now + SESSION_LIFETIME_MS);
-  return `${expiresAt}.${sign(expiresAt, secret).toString("hex")}`;
+  return createSessionValue(secret, now);
 }
 
-/** The session a cookie value proves, or null when it is forged, malformed or expired. */
-export function verifySessionValue(value: string, now: number): AdminSession | null {
-  const secret = readSecret();
-  if (!secret) return null;
-
-  const match = SESSION_PATTERN.exec(value);
-  if (!match) return null;
-  const [, expiresAt, signature] = match;
-
-  // The signature is checked before the expiry so a forged value and an expired one
-  // cost the same, and nothing about the expiry is trusted until it is authenticated.
-  const expected = sign(expiresAt, secret);
-  const provided = Buffer.from(signature, "hex");
-  if (!timingSafeEqual(expected, provided)) return null;
-
-  const expiresAtMs = Number(expiresAt);
-  return expiresAtMs > now ? { expiresAt: new Date(expiresAtMs) } : null;
+/*
+  The revocation point lives in the database. If it cannot be read (outage, migration 0005
+  not applied yet) the signature and expiry alone decide, so the owner is never locked out
+  of the health page during the outage they are diagnosing.
+*/
+async function revocationPoint() {
+  try {
+    const [row] = await getDb()<{ ms: number | null }[]>`
+      select (extract(epoch from valid_after) * 1000)::float8 as ms from admin_session_state where id = 1
+    `;
+    return row?.ms ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getAdminSession(): Promise<AdminSession | null> {
+  const secret = readSecret();
   const value = (await cookies()).get(ADMIN_COOKIE)?.value;
-  return value ? verifySessionValue(value, Date.now()) : null;
+  if (!secret || !value) return null;
+
+  const claims = verifySessionValue(secret, value, Date.now());
+  if (!claims) return null;
+  const validAfter = isDatabaseConfigured() ? await revocationPoint() : null;
+  return isIssuedAfter(claims, validAfter) ? { expiresAt: new Date(claims.expiresAt) } : null;
 }
 
 export async function hasAdminSession() {
   return (await getAdminSession()) !== null;
 }
 
+/** Invalidates every session issued so far. Returns false when it could not be recorded. */
+export async function revokeAllSessions() {
+  if (!isDatabaseConfigured()) return false;
+  try {
+    await getDb()`
+      insert into admin_session_state (id, valid_after) values (1, now())
+      on conflict (id) do update set valid_after = excluded.valid_after
+    `;
+    return true;
+  } catch (error) {
+    console.error("[admin] revoking sessions failed", errorClass(error));
+    return false;
+  }
+}
+
 /**
- * Cheap CSRF belt on top of SameSite=Lax: when the browser says where a POST came from,
- * it has to be this origin. The admin origin is accepted alongside the request's own
- * because behind a proxy or rewrite `request.url` can carry an internal origin while the
- * browser reports the public one. A missing header is allowed (some clients omit it on
- * same-origin form posts); the literal "null" origin is not.
+ * CSRF check for the same-site admin forms: the browser must say the POST came from the
+ * admin origin itself. `Sec-Fetch-Site` is compared first (only same-origin, or none for
+ * address-bar style requests, pass); the Origin header must equal the admin origin, never
+ * `request.url`, which outside Vercel carries whatever host the client chose. A missing
+ * Origin is allowed (some clients omit it on same-origin form posts); "null" is not.
  */
 export function isSameOriginOrUnspecified(request: Request) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null && site !== "same-origin" && site !== "none") return false;
   const origin = request.headers.get("origin");
-  if (origin === null) return true;
-  return origin === new URL(request.url).origin || origin === adminOrigin();
+  return origin === null || origin === adminOrigin();
 }

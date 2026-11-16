@@ -139,6 +139,8 @@ function SecretForm({ error }: { error: SignInError }) {
         name="secret"
         type="password"
         required
+        // After a wrong or locked attempt the page reloads; put the cursor back where the fix goes.
+        autoFocus={error !== null}
         maxLength={512}
         autoComplete="current-password"
         spellCheck={false}

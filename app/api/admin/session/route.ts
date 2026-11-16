@@ -3,11 +3,14 @@ import {
   ADMIN_COOKIE,
   ADMIN_SESSION_MAX_AGE_SECONDS,
   checkSecret,
-  createSessionValue,
+  hasAdminSession,
   isAdminConfigured,
   isSameOriginOrUnspecified,
+  newSessionValue,
+  revokeAllSessions,
 } from "@/lib/admin/auth";
 import {
+  GLOBAL_FAILURE_CEILING,
   LOGIN_FAILURE_LIMIT,
   LOGIN_WINDOW_SECONDS,
   countRecentFailures,
@@ -16,7 +19,8 @@ import {
 import { isEmailSignInAvailable, redeemCode, requestCode } from "@/lib/admin/otp";
 import { clientIp, hashIp, isIpHashConfigured } from "@/lib/contact/abuse";
 import { isDatabaseConfigured } from "@/lib/db/client";
-import { errorClass } from "@/lib/admin/health";
+import { errorClass } from "@/lib/http/error";
+import { readFormSafe } from "@/lib/http/request";
 
 // node:crypto for the HMAC and timingSafeEqual, TCP for postgres.js.
 export const runtime = "nodejs";
@@ -28,7 +32,8 @@ const MAX_CODE_LENGTH = 16;
 
 const cookieOptions = {
   httpOnly: true,
-  sameSite: "lax",
+  // Strict: the panel is one host and nothing legitimate links into it with a POST.
+  sameSite: "strict",
   path: "/",
   // Browsers drop Secure cookies on plain http://localhost, which would make dev sign-in impossible.
   secure: process.env.NODE_ENV === "production",
@@ -48,25 +53,24 @@ function failureDelay() {
   return new Promise((resolve) => setTimeout(resolve, FAILURE_DELAY_MS));
 }
 
-async function readForm(request: Request) {
-  try {
-    return await request.formData();
-  } catch {
-    return null;
-  }
-}
+type Throttle = { locked: boolean; storeFailures: boolean };
 
 /*
   The throttle is defence in depth behind a 32+ character random secret, so a database
   error fails open (logged) rather than locking the owner out of the health page during
-  the very outage they are trying to diagnose.
+  the very outage they are trying to diagnose. Writes are bounded too: a locked-out source
+  stops adding rows (its lockout simply ends a window later), and once failures from all
+  sources pass a ceiling no more are stored, so unauthenticated traffic cannot grow the
+  shared database.
 */
-async function isLockedOut(ipHash: string) {
+async function throttleState(ipHash: string): Promise<Throttle> {
   try {
-    return (await countRecentFailures(ipHash, LOGIN_WINDOW_SECONDS)) >= LOGIN_FAILURE_LIMIT;
+    const counts = await countRecentFailures(ipHash, LOGIN_WINDOW_SECONDS);
+    const locked = counts.source >= LOGIN_FAILURE_LIMIT;
+    return { locked, storeFailures: !locked && counts.global < GLOBAL_FAILURE_CEILING };
   } catch (error) {
     console.error("[admin] counting sign-in failures failed", errorClass(error));
-    return false;
+    return { locked: false, storeFailures: false };
   }
 }
 
@@ -87,7 +91,13 @@ async function redeemSafely(code: string) {
   }
 }
 
-function signOut() {
+/*
+  Signing out revokes every session, so a copied cookie dies too. Only a signed-in owner can
+  trigger it: an anonymous POST must not be able to write to the database or end the
+  owner's session.
+*/
+async function signOut() {
+  if (await hasAdminSession()) await revokeAllSessions();
   const response = redirectTo("/");
   response.cookies.set(ADMIN_COOKIE, "", { ...cookieOptions, maxAge: 0 });
   return response;
@@ -98,7 +108,7 @@ export async function POST(request: Request) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const form = await readForm(request);
+  const form = await readFormSafe(request);
   if (form?.get("intent") === "signout") return signOut();
 
   // The layout explains which env vars are missing; there is nothing to check against.
@@ -108,10 +118,9 @@ export async function POST(request: Request) {
 
   const ipHash = hashIp(clientIp(request));
 
-  // Refused before the secret is looked at, so a locked-out guesser learns nothing, and
-  // still recorded, so hammering through the lockout keeps extending it.
-  if (await isLockedOut(ipHash)) {
-    await record(ipHash, false);
+  // Refused before the secret is looked at, so a locked-out guesser learns nothing.
+  const throttle = await throttleState(ipHash);
+  if (throttle.locked) {
     await failureDelay();
     return redirectTo("/?error=locked");
   }
@@ -132,7 +141,7 @@ export async function POST(request: Request) {
   const accepted =
     typeof field === "string" && field.length <= maxLength && (usingCode ? await redeemSafely(field) : checkSecret(field));
   if (!accepted) {
-    await record(ipHash, false);
+    if (throttle.storeFailures) await record(ipHash, false);
     // Keeps scripted guessing slow even below the lockout threshold.
     await failureDelay();
     return redirectTo(usingCode ? "/?sent=1&error=code" : "/?error=1");
@@ -141,7 +150,7 @@ export async function POST(request: Request) {
   await record(ipHash, true);
 
   const response = redirectTo("/");
-  response.cookies.set(ADMIN_COOKIE, createSessionValue(Date.now()), {
+  response.cookies.set(ADMIN_COOKIE, newSessionValue(Date.now()), {
     ...cookieOptions,
     maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
   });

@@ -18,7 +18,7 @@ const maxUserAgentLength = 300;
 let cached: { day: string; salt: string } | null = null;
 
 /** Today's date in UTC as YYYY-MM-DD, the same day the database stores in page_views.day. */
-export function utcDay(now = new Date()) {
+function utcDay(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 

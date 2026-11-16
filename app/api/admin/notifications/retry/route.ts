@@ -1,5 +1,6 @@
 import { hasAdminSession, isSameOriginOrUnspecified } from "@/lib/admin/auth";
-import { errorClass } from "@/lib/admin/health";
+import { errorClass } from "@/lib/http/error";
+import { textResponse as text } from "@/lib/http/response";
 import { retryPendingNotifications } from "@/lib/admin/maintenance";
 import { isDatabaseConfigured } from "@/lib/db/client";
 
@@ -7,10 +8,6 @@ import { isDatabaseConfigured } from "@/lib/db/client";
 export const runtime = "nodejs";
 // Twenty sends paced for Resend's rate limit take about eleven seconds.
 export const maxDuration = 30;
-
-function text(body: string, status: number) {
-  return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
-}
 
 /*
   Posted by the plain form on /health, so it works without JavaScript; answers with a 303
