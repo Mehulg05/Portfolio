@@ -1,61 +1,55 @@
-import { buttonStyles, labelStyle } from "@/app/admin/_ui/styles";
+import { Suspense } from "react";
+import { SignInForm } from "@/app/admin/_ui/SignInForm";
+import { SignInFormFromUrl } from "@/app/admin/_ui/SignInFormFromUrl";
+import { labelStyle } from "@/app/admin/_ui/styles";
 
 type Props = {
-  failed: boolean;
+  /** Passed from the server: ADMIN_HOST is not exposed to the client bundle. */
+  host: string;
+  sessionDays: number;
+  failureLimit: number;
+  windowMinutes: number;
 };
 
 /*
-  A plain form posting to the session route, which answers with a 303 back here. No
-  client JS: the error state arrives as ?error=1 on the redirect.
+  Laid out like a drawing sheet: a header strip naming the sheet, the form as the body,
+  and a title block stating the facts of the access path (where, how, how often).
 */
-export function SignIn({ failed }: Props) {
+export function SignIn({ host, sessionDays, failureLimit, windowMinutes }: Props) {
   return (
     <section
-      aria-labelledby="inbox-title"
-      className="grid grid-cols-1 gap-px border border-line bg-line md:grid-cols-[1fr_1.2fr]"
+      aria-labelledby="admin-signin-title"
+      className="tick-frame w-full max-w-[26rem] border border-line bg-surface"
     >
-      <div className="bg-surface p-5 sm:p-7">
+      <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3.5 sm:px-7">
+        <p className={labelStyle}>Sheet · Admin access</p>
         <p className={labelStyle}>
-          Access · <span className="text-accent">Restricted</span>
-        </p>
-        <h1 id="inbox-title" className="mt-4 font-display text-3xl tracking-tight text-ink sm:text-4xl">
-          Inbox
-        </h1>
-        <p className="mt-3 max-w-[40ch] leading-relaxed text-ink-dim">
-          Messages from the contact form. Only the site owner can read them.
+          <span className="text-redline">Signed out</span>
         </p>
       </div>
 
-      <form method="post" action="/api/admin/session" className="bg-ground p-5 sm:p-7">
-        <label htmlFor="inbox-secret" className={labelStyle}>
-          Secret
-        </label>
-        <input
-          id="inbox-secret"
-          name="secret"
-          type="password"
-          required
-          autoComplete="current-password"
-          spellCheck={false}
-          aria-invalid={failed || undefined}
-          aria-describedby={failed ? "inbox-secret-error" : undefined}
-          className="mt-3 block min-h-11 w-full border border-line-bright bg-surface px-3 py-2 font-mono text-sm text-ink focus:border-accent aria-[invalid=true]:border-redline"
-        />
-        {failed ? (
-          <p
-            id="inbox-secret-error"
-            role="alert"
-            className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-redline"
-          >
-            That secret did not match
-          </p>
-        ) : null}
-        <div className="mt-5">
-          <button type="submit" className={buttonStyles.accent}>
-            Sign in
-          </button>
-        </div>
-      </form>
+      <Suspense fallback={<SignInForm error={null} />}>
+        <SignInFormFromUrl />
+      </Suspense>
+
+      <dl className="grid grid-cols-2 gap-px border-t border-line bg-line">
+        <TitleCell label="Host" wide>
+          <span className="break-all">{host}</span>
+        </TitleCell>
+        <TitleCell label="Auth">signed cookie, {sessionDays} d</TitleCell>
+        <TitleCell label="Throttle">
+          {failureLimit} fails / {windowMinutes} min
+        </TitleCell>
+      </dl>
     </section>
+  );
+}
+
+function TitleCell({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={`bg-ground px-5 py-3 sm:px-7 ${wide ? "col-span-2" : ""}`}>
+      <dt className={labelStyle}>{label}</dt>
+      <dd className="mt-1 font-mono text-[12px] text-ink-dim tabular-nums">{children}</dd>
+    </div>
   );
 }

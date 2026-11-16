@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
 import {
-  INBOX_COOKIE,
-  INBOX_SESSION_MAX_AGE_SECONDS,
+  ADMIN_COOKIE,
+  ADMIN_SESSION_MAX_AGE_SECONDS,
   checkSecret,
   createSessionValue,
   isAdminConfigured,
   isSameOriginOrUnspecified,
 } from "@/lib/admin/auth";
+import {
+  LOGIN_FAILURE_LIMIT,
+  LOGIN_WINDOW_SECONDS,
+  countRecentFailures,
+  recordLoginAttempt,
+} from "@/lib/admin/login-attempts";
+import { clientIp, hashIp, isIpHashConfigured } from "@/lib/contact/abuse";
+import { isDatabaseConfigured } from "@/lib/db/client";
 
-// node:crypto for the HMAC and timingSafeEqual.
+// node:crypto for the HMAC and timingSafeEqual, TCP for postgres.js.
 export const runtime = "nodejs";
 
 const FAILURE_DELAY_MS = 400;
@@ -23,9 +31,18 @@ const cookieOptions = {
   secure: process.env.NODE_ENV === "production",
 } as const;
 
-// 303 so the browser follows with a GET; a plain HTML form post never lands on JSON.
-function redirectTo(path: string, request: Request) {
-  return NextResponse.redirect(new URL(path, request.url), 303);
+/*
+  303 so the browser follows with a GET; a plain HTML form post never lands on JSON.
+  The Location is relative on purpose: the browser resolves it against the admin URL it
+  actually posted to, whereas `request.url` can carry another origin (next dev reports
+  localhost whatever the Host header says; a proxy can report its internal one).
+*/
+function redirectTo(path: string) {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
+}
+
+function failureDelay() {
+  return new Promise((resolve) => setTimeout(resolve, FAILURE_DELAY_MS));
 }
 
 async function readForm(request: Request) {
@@ -36,34 +53,71 @@ async function readForm(request: Request) {
   }
 }
 
+/*
+  The throttle is defence in depth behind a 32+ character random secret, so a database
+  error fails open (logged) rather than locking the owner out of the health page during
+  the very outage they are trying to diagnose.
+*/
+async function isLockedOut(ipHash: string) {
+  try {
+    return (await countRecentFailures(ipHash, LOGIN_WINDOW_SECONDS)) >= LOGIN_FAILURE_LIMIT;
+  } catch (error) {
+    console.error("[admin] counting sign-in failures failed", error);
+    return false;
+  }
+}
+
+async function record(ipHash: string, succeeded: boolean) {
+  try {
+    await recordLoginAttempt(ipHash, succeeded);
+  } catch (error) {
+    console.error("[admin] recording a sign-in attempt failed", error);
+  }
+}
+
+function signOut() {
+  const response = redirectTo("/");
+  response.cookies.set(ADMIN_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+  return response;
+}
+
 export async function POST(request: Request) {
   if (!isSameOriginOrUnspecified(request)) {
     return new Response("Forbidden", { status: 403 });
   }
 
   const form = await readForm(request);
+  if (form?.get("intent") === "signout") return signOut();
 
-  if (form?.get("intent") === "signout") {
-    const response = redirectTo("/", request);
-    response.cookies.set(INBOX_COOKIE, "", { ...cookieOptions, maxAge: 0 });
-    return response;
+  // The layout explains which env vars are missing; there is nothing to check against.
+  if (!isAdminConfigured() || !isDatabaseConfigured() || !isIpHashConfigured()) {
+    return redirectTo("/");
   }
 
-  // The page explains which env vars are missing; there is nothing to check against.
-  if (!isAdminConfigured()) return redirectTo("/", request);
+  const ipHash = hashIp(clientIp(request));
+
+  // Refused before the secret is looked at, so a locked-out guesser learns nothing, and
+  // still recorded, so hammering through the lockout keeps extending it.
+  if (await isLockedOut(ipHash)) {
+    await record(ipHash, false);
+    await failureDelay();
+    return redirectTo("/?error=locked");
+  }
 
   const secret = form?.get("secret");
   if (typeof secret !== "string" || secret.length > MAX_SECRET_LENGTH || !checkSecret(secret)) {
-    // A 32-byte random secret already makes brute force pointless; the delay only keeps
-    // scripted guessing slow enough that it does not flood the logs.
-    await new Promise((resolve) => setTimeout(resolve, FAILURE_DELAY_MS));
-    return redirectTo("/?error=1", request);
+    await record(ipHash, false);
+    // Keeps scripted guessing slow even below the lockout threshold.
+    await failureDelay();
+    return redirectTo("/?error=1");
   }
 
-  const response = redirectTo("/", request);
-  response.cookies.set(INBOX_COOKIE, createSessionValue(Date.now()), {
+  await record(ipHash, true);
+
+  const response = redirectTo("/");
+  response.cookies.set(ADMIN_COOKIE, createSessionValue(Date.now()), {
     ...cookieOptions,
-    maxAge: INBOX_SESSION_MAX_AGE_SECONDS,
+    maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
   });
   return response;
 }
