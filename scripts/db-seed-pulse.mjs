@@ -10,7 +10,7 @@
     DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/postgres node scripts/db-seed-pulse.mjs
 */
 import { randomUUID } from "node:crypto";
-import postgres from "postgres";
+import { connect, inSchema } from "./db-connect.mjs";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -126,10 +126,10 @@ for (let ago = 29; ago >= 0; ago -= 1) {
   }
 }
 
-const sql = postgres(url, { max: 1, onnotice: () => {} });
+const sql = connect();
 
 try {
-  const removed = await sql.begin(async (tx) => {
+  const removed = await inSchema(sql, async (tx) => {
     const deleted = await tx`delete from page_views where visitor_hash like 'seed-%'`;
     for (const row of rows) {
       const e = row.engagement;

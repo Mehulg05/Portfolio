@@ -7,7 +7,7 @@ import { getDb, isDatabaseConfigured } from "@/lib/db/client";
 
 /*
   Everything /health shows, gathered per request. Each probe fails on its own: a missing
-  schema_migrations table should not hide the DB latency, and a dead database should still
+  portfolio_schema_migrations table should not hide the DB latency, and a dead database should still
   leave the env checklist and deploy info readable, since those are what explain it.
 
   Errors are reported by class and code only (PostgresError 42P01, Error ECONNREFUSED).
@@ -124,7 +124,7 @@ async function migrationFiles() {
 async function migrationState(): Promise<MigrationState> {
   const [expected, rows] = await Promise.all([
     migrationFiles(),
-    getDb()<{ name: string }[]>`select name from schema_migrations order by name desc`,
+    getDb()<{ name: string }[]>`select name from portfolio_schema_migrations order by name desc`,
   ]);
   const applied = rows.map((row) => row.name);
   const appliedSet = new Set(applied);

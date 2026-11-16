@@ -6,25 +6,19 @@
 
     DATABASE_URL=... npm run db:prune
 */
-import postgres from "postgres";
-
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL is not set.");
-  process.exit(1);
-}
+import { connect, inSchema } from "./db-connect.mjs";
 
 const pageViewDays = 90;
 const loginAttemptDays = 1;
-const sql = postgres(url, { max: 1, onnotice: () => {} });
+const sql = connect();
 
 try {
-  const views = await sql`
-    delete from page_views where created_at < now() - make_interval(days => ${pageViewDays})
-  `;
-  const attempts = await sql`
-    delete from login_attempts where created_at < now() - make_interval(days => ${loginAttemptDays})
-  `;
+  const [views, attempts] = await inSchema(sql, (tx) =>
+    Promise.all([
+      tx`delete from page_views where created_at < now() - make_interval(days => ${pageViewDays})`,
+      tx`delete from login_attempts where created_at < now() - make_interval(days => ${loginAttemptDays})`,
+    ]),
+  );
   console.log(`page_views      ${views.count} deleted (older than ${pageViewDays} days)`);
   console.log(`login_attempts  ${attempts.count} deleted (older than ${loginAttemptDays} day)`);
 } catch (error) {

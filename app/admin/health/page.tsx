@@ -178,7 +178,7 @@ function MigrationsDetail({ migrations }: { migrations: Probe<MigrationState> })
     return (
       <p className="font-mono text-[12px] text-redline">
         {migrations.error}
-        {migrations.error.includes("42P01") ? ": no schema_migrations table; run npm run db:migrate." : null}
+        {migrations.error.includes("42P01") ? ": no portfolio_schema_migrations table; run npm run db:migrate." : null}
       </p>
     );
   }
