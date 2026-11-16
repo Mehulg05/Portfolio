@@ -9,6 +9,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
+  type Ref,
   type RefObject,
 } from "react";
 import {
@@ -31,6 +32,8 @@ import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
   Without JavaScript the <noscript> block lists every video (native controls) and trace.
 */
 
+// Matches the 2.5rem edge fade on .walk-tabs in client-work.css.
+const TAB_EDGE_FADE_PX = 40;
 const IMAGE_BASE_MS = 3600;
 const IMAGE_PER_LINE_MS = 520;
 const imageStepMs = (step: ImageStep) => IMAGE_BASE_MS + step.log.length * IMAGE_PER_LINE_MS;
@@ -116,6 +119,7 @@ export function Walkthrough() {
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
+  const playButtonRef = useRef<HTMLButtonElement>(null);
 
   useEdgeFade(tabListRef);
 
@@ -154,7 +158,7 @@ export function Walkthrough() {
     const tab = tabRefs.current[flowIndex];
     const list = tab?.parentElement;
     if (!tab || !list || list.scrollWidth <= list.clientWidth) return;
-    list.scrollTo({ left: tab.offsetLeft - 20, behavior: motion ? "smooth" : "auto" });
+    list.scrollTo({ left: tab.offsetLeft - TAB_EDGE_FADE_PX - 8, behavior: motion ? "smooth" : "auto" });
   }, [flowIndex, motion]);
 
   const flow = walkthrough[flowIndex] ?? walkthrough[0];
@@ -165,7 +169,7 @@ export function Walkthrough() {
     if (!video || flow?.kind !== "video") return;
     if (playing) void video.play().catch(() => setVideoPlaying(false));
     else video.pause();
-  }, [playing, flow, flowIndex]);
+  }, [playing, flow]);
 
   // Fill the active rail segment from the video clock, without re-rendering React.
   useEffect(() => {
@@ -243,13 +247,10 @@ export function Walkthrough() {
     const target = moves[event.key];
     if (target === undefined) return;
     event.preventDefault();
-    setUserDriven(true);
-    goTo(target, 0);
+    byUser(() => goTo(target, 0));
     tabRefs.current[target]?.focus();
   };
 
-  const step = flow.steps[stepIndex] ?? flow.steps[0];
-  if (!step) return null;
   const stepKey = `${flow.id}-${stepIndex}`;
   const isPlaying = flow.kind === "video" ? videoPlaying : playing;
   const activeImageStep = flow.kind === "images" ? flow.steps[stepIndex] : undefined;
@@ -263,7 +264,7 @@ export function Walkthrough() {
           role="tablist"
           aria-label="Walkthrough, one flow per role"
           onKeyDown={onTabKey}
-          className="walk-tabs -mx-5 -my-1 flex gap-1.5 overflow-x-auto px-5 py-1 sm:-mx-1 sm:px-1"
+          className="walk-tabs relative -mx-5 -my-1 flex gap-1.5 overflow-x-auto px-5 py-1 sm:-mx-1 sm:px-1"
         >
           {walkthrough.map((item, index) => {
             const selected = index === flowIndex;
@@ -302,6 +303,7 @@ export function Walkthrough() {
             <path d="M9.5 3.5 5 8l4.5 4.5" />
           </ControlButton>
           <ControlButton
+            buttonRef={playButtonRef}
             label={isPlaying ? "Pause the walkthrough" : "Play the walkthrough"}
             onClick={() => byUser(() => setWantsPlay(!isPlaying))}
           >
@@ -350,13 +352,19 @@ export function Walkthrough() {
               playing={videoPlaying}
               onPlayingChange={setVideoPlaying}
               onClockStep={followClock}
-              onSeekStep={(index) => setStepIndex((current) => (current === index ? current : index))}
+              onSeekStep={setStepIndex}
               onEnded={() => {
                 if (!(wantsPlay ?? motion)) return;
                 setUserDriven(false);
                 nextFlow();
               }}
-              onPlayRequest={() => byUser(() => setWantsPlay(true))}
+              onPlayRequest={() =>
+                byUser(() => {
+                  setWantsPlay(true);
+                  // The overlay unmounts once playback starts; keep keyboard focus on the toolbar.
+                  playButtonRef.current?.focus();
+                })
+              }
             />
           ) : (
             <ImageStage flow={flow} stepIndex={stepIndex} stepKey={stepKey} />
@@ -416,9 +424,20 @@ export function Walkthrough() {
   );
 }
 
-function ControlButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+function ControlButton({
+  label,
+  onClick,
+  children,
+  buttonRef,
+}: {
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+  buttonRef?: Ref<HTMLButtonElement>;
+}) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-label={label}
       title={label}
@@ -458,6 +477,9 @@ function VideoStage({
   onEnded: () => void;
   onPlayRequest: () => void;
 }) {
+  // Switching flows unmounts this <video> mid-play, and its pause event never reaches React,
+  // so report "not playing" on the way out or the toolbar stays stuck on Pause.
+  useEffect(() => () => onPlayingChange(false), [onPlayingChange]);
   return (
     <div className="relative bg-[#f5f4f0]" style={{ aspectRatio: `${flow.frame.width} / ${flow.frame.height}` }}>
       <video
@@ -545,9 +567,13 @@ function Trace({ flow, stepIndex, announce }: { flow: WalkFlow; stepIndex: numbe
   const active = steps[stepIndex];
   return (
     <aside className="flex flex-col border border-line bg-surface">
-      {/* One persistent live region: the layers below swap visibility, which screen readers don't announce reliably. */}
-      <p className="sr-only" aria-live={announce ? "polite" : "off"} aria-atomic="true">
-        {active ? `Step ${stepIndex + 1} of ${steps.length}: ${active.title}` : ""}
+      {/*
+        One persistent live region: the layers below swap visibility, which screen readers
+        don't announce reliably. It stays polite and goes empty during autoplay, because
+        flipping aria-live together with the text is dropped by some screen readers.
+      */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {announce && active ? `Step ${stepIndex + 1} of ${steps.length}: ${active.title}` : ""}
       </p>
       <div className="grid flex-1">
         {steps.map((step, index) => (

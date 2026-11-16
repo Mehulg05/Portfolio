@@ -196,7 +196,6 @@
   .live-dot::after {
     display: none;
   }
-  .live-dot::after,
   .walk-click,
   .walk-in,
   .walk-line,
