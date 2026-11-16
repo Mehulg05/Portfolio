@@ -1,4 +1,4 @@
-import { buttonStyles, labelStyle } from "@/app/inbox/styles";
+import { buttonStyles, labelStyle } from "@/app/admin/_ui/styles";
 
 type Props = {
   failed: boolean;
@@ -26,7 +26,7 @@ export function SignIn({ failed }: Props) {
         </p>
       </div>
 
-      <form method="post" action="/api/inbox/session" className="bg-ground p-5 sm:p-7">
+      <form method="post" action="/api/admin/session" className="bg-ground p-5 sm:p-7">
         <label htmlFor="inbox-secret" className={labelStyle}>
           Secret
         </label>

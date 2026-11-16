@@ -1,7 +1,7 @@
 import "server-only";
 import { getDb } from "@/lib/db/client";
 
-export const messageStatuses = ["new", "read", "replied"] as const;
+export const messageStatuses = ["new", "read", "replied", "archived"] as const;
 export type MessageStatus = (typeof messageStatuses)[number];
 
 export type Message = {

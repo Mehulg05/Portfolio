@@ -3,7 +3,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 /*
-  Auth for the private /inbox page. There is one reader, so there are no accounts: the
+  Auth for the private admin panel. There is one reader, so there are no accounts: the
   owner proves they know INBOX_SECRET once and gets a signed, expiring cookie.
 
   The session value is `${expiresAtMs}.${hmacHex}` with HMAC-SHA256 keyed by INBOX_SECRET.
@@ -30,7 +30,7 @@ function readSecret() {
   return secret && secret.length >= MIN_SECRET_LENGTH ? secret : null;
 }
 
-export function isInboxConfigured() {
+export function isAdminConfigured() {
   return readSecret() !== null;
 }
 
@@ -77,7 +77,7 @@ export function verifySessionValue(value: string, now: number) {
   return Number(expiresAt) > now;
 }
 
-export async function hasInboxSession() {
+export async function hasAdminSession() {
   const value = (await cookies()).get(INBOX_COOKIE)?.value;
   return value ? verifySessionValue(value, Date.now()) : false;
 }

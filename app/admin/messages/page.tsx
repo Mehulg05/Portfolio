@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { InboxHeader } from "@/app/inbox/InboxHeader";
-import { MessageList } from "@/app/inbox/MessageList";
-import { NotConfigured } from "@/app/inbox/NotConfigured";
-import { SignIn } from "@/app/inbox/SignIn";
-import { labelStyle } from "@/app/inbox/styles";
-import { hasInboxSession, isInboxConfigured } from "@/lib/contact/inbox-auth";
+import { InboxHeader } from "@/app/admin/messages/InboxHeader";
+import { MessageList } from "@/app/admin/messages/MessageList";
+import { NotConfigured } from "@/app/admin/_ui/NotConfigured";
+import { SignIn } from "@/app/admin/_ui/SignIn";
+import { labelStyle } from "@/app/admin/_ui/styles";
+import { hasAdminSession, isAdminConfigured } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { listMessages, type Message } from "@/lib/db/messages";
 
@@ -30,12 +30,12 @@ async function loadMessages(): Promise<Message[] | null> {
 
 async function InboxContent({ failedSignIn }: { failedSignIn: boolean }) {
   const missing = [
-    isInboxConfigured() ? null : "INBOX_SECRET",
+    isAdminConfigured() ? null : "INBOX_SECRET",
     isDatabaseConfigured() ? null : "DATABASE_URL",
   ].filter((name) => name !== null);
   if (missing.length > 0) return <NotConfigured missing={missing} />;
 
-  if (!(await hasInboxSession())) return <SignIn failed={failedSignIn} />;
+  if (!(await hasAdminSession())) return <SignIn failed={failedSignIn} />;
 
   const messages = await loadMessages();
   if (!messages) {
@@ -60,7 +60,7 @@ async function InboxContent({ failedSignIn }: { failedSignIn: boolean }) {
   );
 }
 
-export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
+export default async function InboxPage({ searchParams }: PageProps<"/admin/messages">) {
   const { error } = await searchParams;
 
   return (

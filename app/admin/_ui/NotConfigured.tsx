@@ -1,4 +1,4 @@
-import { labelStyle } from "@/app/inbox/styles";
+import { labelStyle } from "@/app/admin/_ui/styles";
 
 type Props = {
   /** Env var names only; values never reach the page. */

@@ -4,9 +4,9 @@ import {
   INBOX_SESSION_MAX_AGE_SECONDS,
   checkSecret,
   createSessionValue,
-  isInboxConfigured,
+  isAdminConfigured,
   isSameOriginOrUnspecified,
-} from "@/lib/contact/inbox-auth";
+} from "@/lib/admin/auth";
 
 // node:crypto for the HMAC and timingSafeEqual.
 export const runtime = "nodejs";
@@ -44,23 +44,23 @@ export async function POST(request: Request) {
   const form = await readForm(request);
 
   if (form?.get("intent") === "signout") {
-    const response = redirectTo("/inbox", request);
+    const response = redirectTo("/", request);
     response.cookies.set(INBOX_COOKIE, "", { ...cookieOptions, maxAge: 0 });
     return response;
   }
 
   // The page explains which env vars are missing; there is nothing to check against.
-  if (!isInboxConfigured()) return redirectTo("/inbox", request);
+  if (!isAdminConfigured()) return redirectTo("/", request);
 
   const secret = form?.get("secret");
   if (typeof secret !== "string" || secret.length > MAX_SECRET_LENGTH || !checkSecret(secret)) {
     // A 32-byte random secret already makes brute force pointless; the delay only keeps
     // scripted guessing slow enough that it does not flood the logs.
     await new Promise((resolve) => setTimeout(resolve, FAILURE_DELAY_MS));
-    return redirectTo("/inbox?error=1", request);
+    return redirectTo("/?error=1", request);
   }
 
-  const response = redirectTo("/inbox", request);
+  const response = redirectTo("/", request);
   response.cookies.set(INBOX_COOKIE, createSessionValue(Date.now()), {
     ...cookieOptions,
     maxAge: INBOX_SESSION_MAX_AGE_SECONDS,

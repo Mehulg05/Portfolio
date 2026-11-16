@@ -1,6 +1,6 @@
-import { formatAbsoluteTime, formatRelativeTime, formatShortDate } from "@/app/inbox/relative-time";
-import { buildReplyHref } from "@/app/inbox/reply-link";
-import { buttonStyles } from "@/app/inbox/styles";
+import { formatAbsoluteTime, formatRelativeTime, formatShortDate } from "@/app/admin/_ui/relative-time";
+import { buildReplyHref } from "@/app/admin/messages/reply-link";
+import { buttonStyles } from "@/app/admin/_ui/styles";
 import type { Message, MessageStatus } from "@/lib/db/messages";
 
 type Props = {
@@ -12,6 +12,7 @@ const statusStyles: Record<MessageStatus, string> = {
   new: "border-accent/45 text-accent",
   read: "border-line text-ink-faint",
   replied: "border-line-bright text-ink-dim",
+  archived: "border-line text-ink-faint",
 };
 
 // Only the moves that make sense from each state; "new" doubles as mark-unread.
@@ -25,6 +26,7 @@ const transitions: Record<MessageStatus, { to: MessageStatus; label: string }[]>
     { to: "new", label: "Mark unread" },
   ],
   replied: [{ to: "new", label: "Mark unread" }],
+  archived: [{ to: "new", label: "Mark unread" }],
 };
 
 function StatusTag({ status }: { status: MessageStatus }) {
@@ -40,7 +42,7 @@ function StatusTag({ status }: { status: MessageStatus }) {
 
 function StatusButton({ id, to, label, context }: { id: string; to: MessageStatus; label: string; context: string }) {
   return (
-    <form method="post" action={`/api/inbox/messages/${id}`}>
+    <form method="post" action={`/api/admin/messages/${id}`}>
       <input type="hidden" name="status" value={to} />
       <button type="submit" className={buttonStyles.default}>
         {label}

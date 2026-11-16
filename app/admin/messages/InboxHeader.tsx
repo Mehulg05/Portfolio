@@ -1,4 +1,4 @@
-import { buttonStyles, labelStyle } from "@/app/inbox/styles";
+import { buttonStyles, labelStyle } from "@/app/admin/_ui/styles";
 
 type Props = {
   total: number;
@@ -24,7 +24,7 @@ export function InboxHeader({ total, unread, replied, capped }: Props) {
           </p>
           <h1 className="mt-4 font-display text-3xl tracking-tight text-ink sm:text-4xl">Inbox</h1>
         </div>
-        <form method="post" action="/api/inbox/session">
+        <form method="post" action="/api/admin/session">
           <input type="hidden" name="intent" value="signout" />
           <button type="submit" className={buttonStyles.default}>
             Sign out

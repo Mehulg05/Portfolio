@@ -1,4 +1,4 @@
-import { MessageCard } from "@/app/inbox/MessageCard";
+import { MessageCard } from "@/app/admin/messages/MessageCard";
 import type { Message } from "@/lib/db/messages";
 
 type Props = {

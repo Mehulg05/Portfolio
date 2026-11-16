@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasInboxSession, isSameOriginOrUnspecified } from "@/lib/contact/inbox-auth";
+import { hasAdminSession, isSameOriginOrUnspecified } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { isMessageStatus, setMessageStatus } from "@/lib/db/messages";
 
@@ -14,13 +14,13 @@ function text(body: string, status: number) {
 }
 
 /*
-  Targeted by plain HTML forms on /inbox, so marking a message works with JavaScript off
+  Targeted by plain HTML forms on the messages page, so marking a message works with JavaScript off
   and the page needs no client components. Answers with a 303 back to the card that was
   acted on.
 */
-export async function POST(request: Request, { params }: RouteContext<"/api/inbox/messages/[id]">) {
+export async function POST(request: Request, { params }: RouteContext<"/api/admin/messages/[id]">) {
   if (!isSameOriginOrUnspecified(request)) return text("Forbidden", 403);
-  if (!(await hasInboxSession())) return text("Sign in at /inbox first.", 401);
+  if (!(await hasAdminSession())) return text("Sign in first.", 401);
   if (!isDatabaseConfigured()) return text("DATABASE_URL is not set.", 503);
 
   const { id } = await params;
@@ -43,5 +43,5 @@ export async function POST(request: Request, { params }: RouteContext<"/api/inbo
   }
   if (!updated) return text("No such message.", 404);
 
-  return NextResponse.redirect(new URL(`/inbox#m-${id.toLowerCase()}`, request.url), 303);
+  return NextResponse.redirect(new URL(`/messages#m-${id.toLowerCase()}`, request.url), 303);
 }
