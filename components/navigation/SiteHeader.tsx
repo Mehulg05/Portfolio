@@ -106,6 +106,22 @@ export function SiteHeader() {
   }, []);
 
   /*
+    A hash link scrolls but leaves focus where it was, so the next Tab would start from the
+    link instead of the section just reached. Move focus to the target without scrolling
+    again; sections are not otherwise focusable, hence tabindex="-1".
+  */
+  useEffect(() => {
+    const onHashChange = () => {
+      const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+      if (!target) return;
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  /*
     Below lg the nav is a row that scrolls sideways. Keep the current section's link in
     that row's view, or a phone visitor reading Research sees only "Experience · Client
     Work" with nothing highlighted.
@@ -138,7 +154,7 @@ export function SiteHeader() {
         <nav
           ref={navRef}
           aria-label="Sections"
-          className="nav-scroll -ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="nav-scroll -ml-2 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] lg:ml-0 lg:flex-none lg:overflow-visible [scroll-padding-inline:2.5rem] [&::-webkit-scrollbar]:hidden"
         >
           <ul className="flex items-center gap-1 whitespace-nowrap lg:gap-5">
             {navSections.map((section) => {
@@ -148,7 +164,7 @@ export function SiteHeader() {
                   <a
                     href={`#${section.id}`}
                     aria-current={isActive ? "true" : undefined}
-                    className={`inline-flex min-h-11 items-center px-2 font-mono text-[11px] uppercase tracking-[0.14em] lg:min-h-0 lg:px-0 ${
+                    className={`inline-flex min-h-11 items-center px-2 font-mono text-[11px] uppercase tracking-[0.14em] focus-visible:-outline-offset-2 lg:min-h-0 lg:px-0 lg:focus-visible:outline-offset-4 ${
                       isActive ? "text-accent" : "text-ink-faint hover:text-ink"
                     }`}
                   >
@@ -184,7 +200,7 @@ export function SiteHeader() {
             ref={(node) => {
               tickRefs.current[index] = node;
             }}
-            className="absolute bottom-0 hidden h-[5px] w-px bg-line-bright data-[current]:h-[9px] data-[passed]:bg-accent data-[placed]:block motion-safe:transition-[height,background-color] motion-safe:duration-200"
+            className="absolute bottom-0 hidden h-[9px] w-px origin-bottom scale-y-[0.5556] bg-line-bright data-[current]:scale-y-100 data-[passed]:bg-accent data-[placed]:block motion-safe:transition-[transform,background-color] motion-safe:duration-200"
           />
         ))}
       </div>

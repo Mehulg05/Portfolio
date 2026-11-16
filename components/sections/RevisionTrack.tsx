@@ -1,11 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/animation/Reveal";
-import { HOLDER_W, IdCard, IdCardStatic } from "@/components/sections/IdCard";
+import { HOLDER_W, IdCardStatic } from "@/components/sections/IdCardStatic";
 import { milestones } from "@/lib/content/milestones";
 import { observeScrollProgress } from "@/lib/motion/scroll-progress";
 import { useMotionEnabled } from "@/lib/motion/use-motion-enabled";
+
+// The hanging card and its physics are desktop-and-motion only, so phones never fetch them.
+const IdCard = dynamic(() => import("@/components/sections/IdCard").then((module) => module.IdCard), {
+  ssr: false,
+});
 
 export function RevisionTrack() {
   const enabled = useMotionEnabled();
@@ -17,9 +23,21 @@ export function RevisionTrack() {
     direction: 1,
   });
 
+  // Measuring every entry on every scroll frame is only worth it while the track is near.
+  const [near, setNear] = useState(false);
   useEffect(() => {
     const container = containerRef.current;
     if (!enabled || !container) return;
+    const observer = new IntersectionObserver(([entry]) => setNear(entry?.isIntersecting ?? false), {
+      rootMargin: "200px 0px",
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [enabled]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!enabled || !near || !container) return;
 
     const readLine = 0.45;
 
@@ -40,7 +58,7 @@ export function RevisionTrack() {
       },
       { readLine },
     );
-  }, [enabled]);
+  }, [enabled, near]);
 
   const current = milestones[active.index];
 
@@ -48,11 +66,13 @@ export function RevisionTrack() {
     <div ref={containerRef} className="mt-8 lg:grid lg:grid-cols-[1fr_240px] lg:gap-14">
       {/*
         Pinned column on the right, desktop and motion only: the ID card for the step
-        you have scrolled to, hanging from the top of the viewport. Rendered first so the timeline stays the
-        section's primary content in source order; `order` moves it visually.
+        you have scrolled to, hanging from the top of the viewport. Rendered first so the
+        timeline stays the section's primary content in source order; `order` moves it
+        visually. Decorative, and it repeats what each entry already says, so it is hidden
+        from assistive technology.
       */}
       {enabled ? (
-        <div className="lg:order-2 lg:justify-self-end">
+        <div aria-hidden="true" className="lg:order-2 lg:justify-self-end">
           <div className="sticky top-28" style={{ width: HOLDER_W }}>
             <IdCard milestone={current} direction={active.direction} />
           </div>
@@ -68,7 +88,9 @@ export function RevisionTrack() {
           >
             <span
               aria-hidden="true"
-              className={`absolute top-1 -left-[6px] h-[11px] w-[11px] rounded-full border-2 ${
+              className={`absolute top-1 -left-[6px] h-[11px] w-[11px] rounded-full border-2 transition-opacity duration-500 ${
+                enabled && index !== active.index ? "opacity-45" : ""
+              } ${
                 milestone.current
                   ? "border-accent bg-accent"
                   : "border-line-bright bg-ground"
@@ -79,17 +101,11 @@ export function RevisionTrack() {
               ref={(node) => {
                 itemsRef.current[index] = node;
               }}
-              className={
-                enabled
-                  ? `transition-opacity duration-500 ${
-                      index === active.index ? "opacity-100" : "opacity-45"
-                    }`
-                  : undefined
-              }
             >
+              {/* Only the marker and period label recede; the text being read never dims. */}
               <p
                 className={`label-mono ${
-                  milestone.current ? "text-accent" : "text-ink-faint"
+                  milestone.current || (enabled && index === active.index) ? "text-accent" : "text-ink-faint"
                 }`}
               >
                 {milestone.period}
@@ -107,8 +123,8 @@ export function RevisionTrack() {
                 ))}
               </div>
 
-              {/* Below lg there is no pinned column, so the card sits with its step. */}
-              <div className="mt-5 lg:hidden">
+              {/* No pinned column below lg or without motion, so the card sits with its step. */}
+              <div className="idcard-inline mt-5">
                 <IdCardStatic milestone={milestone} />
               </div>
             </div>

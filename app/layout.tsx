@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 import "./globals.css";
-import { SmoothScroll } from "@/components/animation/SmoothScroll";
 import { Pulse } from "@/components/analytics/Pulse";
 import { InkDefs } from "@/components/ui/Ink";
 import { meta, profile } from "@/lib/content/profile";
@@ -10,21 +9,24 @@ import { siteUrl } from "@/lib/site";
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  // 500 is not used anywhere; 600 is the admin's unread-row weight.
+  weight: ["400", "600"],
   display: "swap",
 });
 
 const plexCondensed = IBM_Plex_Sans_Condensed({
   variable: "--font-plex-cond",
   subsets: ["latin"],
-  weight: ["600", "700"],
+  // The public site sets display type at 700 (hero) or the default weight, which resolves
+  // to the nearest face. Fewer faces means fewer preloaded files on the critical path.
+  weight: ["700"],
   display: "swap",
 });
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400"],
   display: "swap",
 });
 
@@ -81,18 +83,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/*
-          Runs before paint so revealed content never flashes in and back out. If the
-          reveal engine has not started within 4s (a failed or very slow chunk), the gate
-          is lifted so the page is never left blank.
+          Runs before paint so revealed content never flashes in and back out.
+          - js-motion gates the reveal CSS; skipped under reduced motion.
+          - If the reveal engine has not started within 2.5s (a failed or very slow chunk)
+            the gate is lifted so the page is never left blank.
+          - `smooth` turns on smooth anchor scrolling only after load, so a cold deep link
+            lands at once instead of gliding down the whole page.
+          - On DOMContentLoaded whatever is already in view is revealed, without waiting
+            for React to hydrate over a slow connection.
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var d=document.documentElement;if(!matchMedia("(prefers-reduced-motion: reduce)").matches){d.classList.add("js-motion");setTimeout(function(){if(!d.hasAttribute("data-reveal-ready"))d.classList.remove("js-motion")},4000)}}catch(e){}`,
+            __html: `try{var d=document.documentElement;if(!matchMedia("(prefers-reduced-motion: reduce)").matches){d.classList.add("js-motion");setTimeout(function(){if(!d.hasAttribute("data-reveal-ready"))d.classList.remove("js-motion")},2500);document.addEventListener("DOMContentLoaded",function(){var e=document.querySelectorAll(".reveal"),h=innerHeight*0.92;for(var i=0;i<e.length;i++)if(e[i].getBoundingClientRect().top<h)e[i].classList.add("is-revealed")});addEventListener("load",function(){requestAnimationFrame(function(){d.classList.add("smooth")})})}}catch(e){}`,
           }}
         />
       </head>
       <body className="flex min-h-full flex-col">
-        <SmoothScroll />
         <Pulse />
         <InkDefs />
         <a

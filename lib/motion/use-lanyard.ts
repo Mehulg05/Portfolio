@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
+import { CLIP_DEPTH, STRAP_WIDTH } from "@/lib/motion/lanyard-geometry";
 import { observeScrollProgress } from "@/lib/motion/scroll-progress";
 
 /*
@@ -42,10 +43,6 @@ const SUBSTEPS = 4;
 const ITERATIONS = 8;
 const MAX_FRAME = 1 / 30;
 
-/** The hook meets the holder's slot this far below the holder's top edge. */
-export const CLIP_DEPTH = 8;
-/** Strap width, px; the stitched edges sit just inside it. */
-export const STRAP_WIDTH = 12;
 /** The strap disappears into the crimp this far before the hook's attachment point. */
 const STRAP_END = 9;
 
@@ -324,12 +321,30 @@ export function useLanyard(
       }
     };
 
+    // --- visibility -------------------------------------------------------------
+    // Off screen there is nothing to see: no scroll impulses, no physics frames. It picks
+    // up where it was when the card comes back.
+    let visible = true;
+    const visibility = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry?.isIntersecting ?? false;
+        if (visible) {
+          wake();
+        } else if (frame) {
+          cancelAnimationFrame(frame);
+          frame = 0;
+        }
+      },
+      { rootMargin: "120px 0px" },
+    );
+    visibility.observe(root);
+
     // --- scroll -----------------------------------------------------------------
     let lastScrollY = window.scrollY;
     const stopScroll = observeScrollProgress(root, () => {
       const delta = window.scrollY - lastScrollY;
       lastScrollY = window.scrollY;
-      if (dragging || delta === 0) return;
+      if (!visible || dragging || delta === 0) return;
       const push = Math.max(-40, Math.min(40, delta));
       // A twist, and a nudge upwards on the way down so the thread catches the card.
       spin = Math.max(-2.2, Math.min(2.2, spin + push * 0.012));
@@ -399,6 +414,7 @@ export function useLanyard(
 
     return () => {
       stopScroll();
+      visibility.disconnect();
       if (frame) cancelAnimationFrame(frame);
       card.classList.remove("idcard-grab", "is-dragging");
       card.removeEventListener("pointerdown", onDown);

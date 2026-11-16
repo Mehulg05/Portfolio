@@ -1,0 +1,260 @@
+/* Hero: identity stage, portrait spotlight, scan-in, sheet sketch. */
+
+/*
+  Hero identity stage. Two columns: the name sits top-left, the role cycle sits under
+  it against the foot of the portrait, and the portrait holds the right column across
+  both rows. Below `lg` the grid collapses and the three stack in source order.
+*/
+/* The hero has no section padding: #top (the skip link, the logo position) is scrollY 0. */
+#top {
+  scroll-margin-top: var(--header-h);
+}
+
+.hero-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  /* Sized off the viewport rather than the column so the two lines stay one block. */
+  font-size: clamp(3rem, 9.5vw, 5.75rem);
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.hero-name span {
+  display: block;
+}
+.hero-name span:last-child {
+  color: var(--color-ink-faint);
+}
+
+/*
+  Greyscale underneath, colour on top behind a circular mask that follows the cursor.
+  --mx/--my are written by HeroPortrait; parked off-canvas so nothing shows before the
+  first pointer event.
+*/
+.hero-portrait {
+  --mx: -999px;
+  --my: -999px;
+  --spot-r: 96px;
+}
+@media (min-width: 640px) {
+  .hero-portrait {
+    --spot-r: 120px;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-portrait {
+    --spot-r: 140px;
+  }
+}
+
+.hero-portrait-base {
+  filter: grayscale(1) contrast(1.04);
+}
+.hero-portrait-colour {
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  -webkit-mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+}
+.hero-section.is-lit .hero-portrait-colour {
+  opacity: 1;
+}
+
+/*
+  Bright grid — a second copy of the schematic grid, in accent, revealed only in a small
+  radius around the pointer (--gx/--gy, written by HeroPortrait's rAF loop). It is the one
+  ambient answer to the cursor, and it tells the visitor the sheet is live before the
+  sketch hint does. Deliberately the only one: a second cursor-follower reads as a
+  custom cursor.
+*/
+.sheet-grid-bright {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-accent) 38%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
+  mask-image: radial-gradient(circle 220px at var(--gx) var(--gy), #000 0%, transparent 70%);
+}
+.hero-section.is-lit .sheet-grid-bright {
+  opacity: 1;
+}
+
+/* The corner stamp cells brighten under a direct hover — the simplest honest way for a
+   discrete, non-continuous element to answer the same pointer without a second coordinate
+   system fighting the grid's section-relative one. */
+.hero-stat {
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero-stat:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-surface);
+  }
+}
+
+/*
+  No fine hover means no spotlight: show the colour portrait outright and drop every
+  layer keyed to a moving cursor.
+
+  The query is the exact negation of HeroPortrait's own gate, `(hover: hover) and
+  (pointer: fine)`. A bare `(hover: none)` missed devices that report hover with a coarse
+  pointer: they got no spotlight and no colour either, just a greyscale portrait.
+*/
+@media (hover: none), (pointer: coarse), (pointer: none) {
+  .hero-portrait-base {
+    filter: none;
+  }
+  .hero-portrait-colour,
+  .sheet-grid-bright {
+    display: none;
+  }
+}
+
+/*
+  Scan-in. Without a spotlight there is nothing to discover, so the portrait gets one
+  moment of its own: it waits greyscale, then a scanline sweeps it into colour.
+
+  The sweep starts when HeroPortrait sets data-scan, which it does once the image has
+  actually loaded, so a slow connection never sees the line cross an empty box. Until
+  then `js-motion` holds the base greyscale; with no JavaScript there is no js-motion
+  and the portrait is simply in colour, as before. data-scan="skip" (a stalled image)
+  releases the hold without animating.
+
+  --scan is registered so the mask interpolates. The line has its own `top` keyframes,
+  so without @property the mask jumps at the end but the line still sweeps. On the last
+  frame the colour copy is hidden (steps(1, jump-end) holds each "from" value until
+  then), so the settled portrait is exactly the colour-outright version above.
+*/
+@property --scan {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: none), (pointer: coarse), (pointer: none) {
+    .js-motion .hero-portrait:not([data-scan]) .hero-portrait-base {
+      filter: grayscale(1) contrast(1.04);
+    }
+    .js-motion .hero-portrait[data-scan="run"] {
+      --scan-delay: 0.15s;
+      --scan-time: 1.6s;
+      --scan-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      animation: scan-in var(--scan-time) var(--scan-ease) var(--scan-delay) both;
+    }
+    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-base {
+      animation: scan-grey var(--scan-time) steps(1, jump-end) var(--scan-delay) backwards;
+    }
+    .js-motion .hero-portrait[data-scan="run"] .hero-portrait-colour {
+      display: block;
+      visibility: hidden;
+      pointer-events: none;
+      opacity: 1;
+      transition: none;
+      animation: scan-cover var(--scan-time) steps(1, jump-end) var(--scan-delay) both;
+      -webkit-mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
+      mask-image: linear-gradient(#000 calc(var(--scan) - 8%), transparent var(--scan));
+    }
+    .js-motion .hero-portrait[data-scan="run"]::after {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      top: 0;
+      height: 1px;
+      background: var(--color-accent);
+      box-shadow: 0 0 12px var(--color-accent);
+      opacity: 0;
+      pointer-events: none;
+      animation:
+        scan-line var(--scan-time) linear var(--scan-delay) both,
+        scan-line-move var(--scan-time) var(--scan-ease) var(--scan-delay) both;
+    }
+  }
+}
+@keyframes scan-in {
+  from {
+    --scan: 0%;
+  }
+  to {
+    --scan: 108%;
+  }
+}
+@keyframes scan-grey {
+  from {
+    filter: grayscale(1) contrast(1.04);
+  }
+}
+/* Visible through the sweep, hidden (and so never hit-tested) from the last frame on. */
+@keyframes scan-cover {
+  from {
+    visibility: visible;
+  }
+}
+@keyframes scan-line {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8%,
+  88% {
+    opacity: 1;
+  }
+}
+/* Tracks the mask edge, which ends at 108% of the height, held at the bottom edge. */
+@keyframes scan-line-move {
+  from {
+    top: 0%;
+  }
+  92.6%,
+  to {
+    top: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-portrait-colour,
+  .sheet-grid-bright {
+    transition: none;
+  }
+}
+
+/*
+  Sheet sketch (SheetSketch.tsx). The empty grid takes a pencil, so the pointer is a
+  crosshair there; text keeps its I-beam and links their hand. The hint shows only
+  while the hero is lit, that is while the pointer is over it.
+*/
+.hero-section.is-sketchable {
+  cursor: crosshair;
+}
+.hero-section.is-sketchable :is(p, h1, dl, dt, dd) {
+  cursor: auto;
+}
+.hero-section.is-sketchable :is(a, button) {
+  cursor: pointer;
+}
+.sketch-hint {
+  opacity: 0;
+  transition: opacity 0.5s ease 0.6s;
+}
+.hero-section.is-lit .sketch-hint {
+  opacity: 1;
+}
