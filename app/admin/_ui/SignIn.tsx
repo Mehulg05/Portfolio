@@ -8,14 +8,15 @@ type Props = {
   host: string;
   sessionDays: number;
   failureLimit: number;
-  windowMinutes: number;
+  windowSeconds: number;
+  emailEnabled: boolean;
 };
 
 /*
   Laid out like a drawing sheet: a header strip naming the sheet, the form as the body,
   and a title block stating the facts of the access path (where, how, how often).
 */
-export function SignIn({ host, sessionDays, failureLimit, windowMinutes }: Props) {
+export function SignIn({ host, sessionDays, failureLimit, windowSeconds, emailEnabled }: Props) {
   return (
     <section
       aria-labelledby="admin-signin-title"
@@ -28,17 +29,17 @@ export function SignIn({ host, sessionDays, failureLimit, windowMinutes }: Props
         </p>
       </div>
 
-      <Suspense fallback={<SignInForm error={null} />}>
-        <SignInFormFromUrl />
+      <Suspense fallback={<SignInForm error={null} codeSent={false} emailEnabled={emailEnabled} />}>
+        <SignInFormFromUrl emailEnabled={emailEnabled} />
       </Suspense>
 
       <dl className="grid grid-cols-2 gap-px border-t border-line bg-line">
         <TitleCell label="Host" wide>
           <span className="break-all">{host}</span>
         </TitleCell>
-        <TitleCell label="Auth">signed cookie, {sessionDays} d</TitleCell>
+        <TitleCell label="Auth">{emailEnabled ? "emailed code" : "recovery key"}, {sessionDays} d</TitleCell>
         <TitleCell label="Throttle">
-          {failureLimit} fails / {windowMinutes} min
+          {failureLimit} fails / {windowSeconds} s
         </TitleCell>
       </dl>
     </section>

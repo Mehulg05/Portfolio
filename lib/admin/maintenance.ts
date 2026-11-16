@@ -1,6 +1,7 @@
 import "server-only";
 import { adminUrl } from "@/lib/admin/host";
 import { pruneLoginAttempts } from "@/lib/admin/login-attempts";
+import { pruneLoginCodes } from "@/lib/admin/otp";
 import { sendNotification } from "@/lib/contact/notify";
 import { profile } from "@/lib/content/profile";
 import { getDb } from "@/lib/db/client";
@@ -60,5 +61,8 @@ export async function retryPendingNotifications(limit = RETRY_LIMIT): Promise<Re
 
 /** Sign-in throttling only looks back minutes; a day of rows is plenty of evidence to keep. */
 export function pruneStaleLoginAttempts() {
-  return pruneLoginAttempts(LOGIN_ATTEMPT_RETENTION_SECONDS);
+  return Promise.all([
+    pruneLoginAttempts(LOGIN_ATTEMPT_RETENTION_SECONDS),
+    pruneLoginCodes(LOGIN_ATTEMPT_RETENTION_SECONDS),
+  ]).then(([attempts, codes]) => attempts + codes);
 }

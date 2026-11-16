@@ -13,6 +13,7 @@ import {
   countRecentFailures,
   recordLoginAttempt,
 } from "@/lib/admin/login-attempts";
+import { isEmailSignInAvailable, redeemCode, requestCode } from "@/lib/admin/otp";
 import { clientIp, hashIp, isIpHashConfigured } from "@/lib/contact/abuse";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { errorClass } from "@/lib/admin/health";
@@ -23,6 +24,7 @@ export const runtime = "nodejs";
 const FAILURE_DELAY_MS = 400;
 // Far above any real secret; stops a huge body from being hashed for nothing.
 const MAX_SECRET_LENGTH = 512;
+const MAX_CODE_LENGTH = 16;
 
 const cookieOptions = {
   httpOnly: true,
@@ -76,6 +78,15 @@ async function record(ipHash: string, succeeded: boolean) {
   }
 }
 
+async function redeemSafely(code: string) {
+  try {
+    return await redeemCode(code.trim());
+  } catch (error) {
+    console.error("[admin] redeeming a code failed", errorClass(error));
+    return false;
+  }
+}
+
 function signOut() {
   const response = redirectTo("/");
   response.cookies.set(ADMIN_COOKIE, "", { ...cookieOptions, maxAge: 0 });
@@ -105,12 +116,26 @@ export async function POST(request: Request) {
     return redirectTo("/?error=locked");
   }
 
-  const secret = form?.get("secret");
-  if (typeof secret !== "string" || secret.length > MAX_SECRET_LENGTH || !checkSecret(secret)) {
+  const intent = form?.get("intent");
+
+  if (intent === "request-code") {
+    // Same answer whether a code went out, was throttled or failed: nothing to probe.
+    if (isEmailSignInAvailable()) {
+      await requestCode().catch((error) => console.error("[admin] requesting a code failed", errorClass(error)));
+    }
+    return redirectTo("/?sent=1");
+  }
+
+  const usingCode = intent === "verify-code";
+  const field = form?.get(usingCode ? "code" : "secret");
+  const maxLength = usingCode ? MAX_CODE_LENGTH : MAX_SECRET_LENGTH;
+  const accepted =
+    typeof field === "string" && field.length <= maxLength && (usingCode ? await redeemSafely(field) : checkSecret(field));
+  if (!accepted) {
     await record(ipHash, false);
     // Keeps scripted guessing slow even below the lockout threshold.
     await failureDelay();
-    return redirectTo("/?error=1");
+    return redirectTo(usingCode ? "/?sent=1&error=code" : "/?error=1");
   }
 
   await record(ipHash, true);

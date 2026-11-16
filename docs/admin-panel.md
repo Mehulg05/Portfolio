@@ -2,7 +2,15 @@
 
 `admin.mehulgupta.me` is the same Vercel deployment as the site. `proxy.ts` sees the admin host and maps its paths onto `app/admin/**`; the public host redirects `/inbox` and `/admin/*` there and refuses admin APIs. Every admin response is `noindex` and the host's `robots.txt` disallows everything. The session cookie is host-only, so it never exists on the public site.
 
-**DNS and Vercel.** Add a CNAME record `admin` → `cname.vercel-dns.com` at your DNS provider. In the Vercel project, Settings → Domains → add `admin.mehulgupta.me` (same project, no redirect). Set `ADMIN_HOST=admin.mehulgupta.me` (the default) and `CRON_SECRET` (`openssl rand -hex 32`) in Production, then redeploy. `INBOX_SECRET` is the panel password (32+ characters).
+**DNS and Vercel.** Add a CNAME record `admin` → `cname.vercel-dns.com` at your DNS provider. In the Vercel project, Settings → Domains → add `admin.mehulgupta.me` (same project, no redirect). Set `ADMIN_HOST=admin.mehulgupta.me` (the default) and `CRON_SECRET` (`openssl rand -hex 32`) in Production, then redeploy. `INBOX_SECRET` (32+ characters) is no longer typed to sign in under normal use: it is the key that signs the session cookie and keys the code hashes, and it doubles as the break-glass recovery key (see Sign-in).
+
+**Sign-in.** Click *Email me a code*; the server generates a random 6-digit code, stores only its HMAC (keyed by `INBOX_SECRET`) with a 10-minute expiry in `admin_login_codes` (migration `0004`), and emails it through Resend to `CONTACT_TO_EMAIL` (profile email if unset), never to an address the browser supplies. A code works once, and dies after 5 wrong guesses. Requests are limited to 3 per 10 minutes in total, and the page answers the same whether or not a code was sent. Entering it issues the usual signed 7-day cookie.
+
+*Throttle:* 15 failed sign-ins (code or recovery key) per IP hash per 1-minute window (`LOGIN_FAILURE_LIMIT` / `LOGIN_WINDOW_SECONDS` in `lib/admin/otp-core.ts`), counted since that IP's last success.
+
+*Resend key (free):* sign up at resend.com with the same address as `CONTACT_TO_EMAIL` (the shared `onboarding@resend.dev` sender only delivers to the account owner), create an API key under API Keys (sending access), add it in Vercel as `RESEND_API_KEY` for Production, and redeploy. Run `npm run db:migrate` for `0004` first.
+
+*Recovery key:* while `RESEND_API_KEY` is unset the page says so and shows the `INBOX_SECRET` form. Once it is set, that form hides behind *Use recovery key* so you can still get in if email is down or the 3-per-10-minutes budget was burned by someone else. Rotating `INBOX_SECRET` signs out every session.
 
 **Pages.**
 - `/` Overview: messages per day for 30 days, counts by status, median time to read and to reply, the newest three messages, a seven-day site pulse.

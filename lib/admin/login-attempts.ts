@@ -7,8 +7,7 @@ import { getDb } from "@/lib/db/client";
   lib/contact/abuse.ts and whether the attempt worked.
 */
 
-export const LOGIN_FAILURE_LIMIT = 5;
-export const LOGIN_WINDOW_SECONDS = 15 * 60;
+export { LOGIN_FAILURE_LIMIT, LOGIN_WINDOW_SECONDS } from "@/lib/admin/otp-core";
 
 export async function recordLoginAttempt(ipHash: string, succeeded: boolean): Promise<void> {
   await getDb()`insert into login_attempts (ip_hash, succeeded) values (${ipHash}, ${succeeded})`;

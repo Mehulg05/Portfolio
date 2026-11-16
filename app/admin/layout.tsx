@@ -6,6 +6,7 @@ import { SignIn } from "@/app/admin/_ui/SignIn";
 import { ADMIN_SESSION_MAX_AGE_SECONDS, getAdminSession, isAdminConfigured } from "@/lib/admin/auth";
 import { adminHost } from "@/lib/admin/host";
 import { LOGIN_FAILURE_LIMIT, LOGIN_WINDOW_SECONDS } from "@/lib/admin/login-attempts";
+import { isEmailSignInAvailable } from "@/lib/admin/otp";
 import { countUnreadMessages } from "@/lib/admin/unread";
 import { isIpHashConfigured } from "@/lib/contact/abuse";
 import { isDatabaseConfigured } from "@/lib/db/client";
@@ -67,7 +68,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           host={adminHost}
           sessionDays={ADMIN_SESSION_MAX_AGE_SECONDS / 86_400}
           failureLimit={LOGIN_FAILURE_LIMIT}
-          windowMinutes={LOGIN_WINDOW_SECONDS / 60}
+          windowSeconds={LOGIN_WINDOW_SECONDS}
+          emailEnabled={isEmailSignInAvailable()}
         />
       </Gate>
     );

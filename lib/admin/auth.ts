@@ -5,7 +5,8 @@ import { adminOrigin } from "@/lib/admin/host";
 
 /*
   Auth for the private admin panel. There is one reader, so there are no accounts: the
-  owner proves they know INBOX_SECRET once and gets a signed, expiring cookie.
+  owner proves they hold the emailed one-time code (or, when email is not configured, the
+  INBOX_SECRET recovery key) and gets a signed, expiring cookie.
 
   The session value is `${expiresAtMs}.${hmacHex}` with HMAC-SHA256 keyed by INBOX_SECRET.
   Nothing is stored server-side, so rotating INBOX_SECRET invalidates every session at
@@ -35,6 +36,11 @@ function readSecret() {
   // Trimmed: a trailing newline from a pasted env value would otherwise make sign-in impossible.
   const secret = process.env.INBOX_SECRET?.trim();
   return secret && secret.length >= MIN_SECRET_LENGTH ? secret : null;
+}
+
+/** The signing key, also used to key the sign-in code hashes. Null when unset or too short. */
+export function otpKey() {
+  return readSecret();
 }
 
 export function isAdminConfigured() {

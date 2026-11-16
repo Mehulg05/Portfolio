@@ -10,10 +10,11 @@ import { SignInForm, type SignInError } from "@/app/admin/_ui/SignInForm";
 */
 function toSignInError(value: string | null): SignInError {
   if (value === null) return null;
-  return value === "locked" ? "locked" : "wrong";
+  if (value === "locked" || value === "code") return value;
+  return "wrong";
 }
 
-export function SignInFormFromUrl() {
-  const error = toSignInError(useSearchParams().get("error"));
-  return <SignInForm error={error} />;
+export function SignInFormFromUrl({ emailEnabled }: { emailEnabled: boolean }) {
+  const params = useSearchParams();
+  return <SignInForm error={toSignInError(params.get("error"))} codeSent={params.get("sent") === "1"} emailEnabled={emailEnabled} />;
 }
