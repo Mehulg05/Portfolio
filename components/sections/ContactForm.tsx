@@ -100,7 +100,7 @@ export function ContactForm({ email }: { email: string }) {
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <p className="font-mono text-[11px] text-ink-faint">
-              Saved in my own Postgres, with a hashed IP for rate limits, and copied to my email through Resend.
+              POST /api/contact: validated on the server, rate-limited by a salted hash of your IP, one row in my own Postgres, then relayed to my inbox.
             </p>
             {/*
               aria-disabled, not disabled: a disabled button drops keyboard focus to the
