@@ -1,7 +1,6 @@
-import { Fragment, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { HeroPortrait } from "@/components/sections/HeroPortrait";
 import { SheetSketch } from "@/components/sections/SheetSketch";
-import { LinkButton } from "@/components/ui/LinkButton";
 import { profile } from "@/lib/content/profile";
 
 // The facts a screener checks first, in the order they check them.
@@ -13,7 +12,6 @@ const titleBlock = [
 ];
 
 const nameLines = profile.name.toUpperCase().split(" ");
-const introWords = profile.intro.split(" ");
 
 export function Hero() {
   return (
@@ -23,7 +21,6 @@ export function Hero() {
     >
       <div className="sheet-grid pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="sheet-grid-bright" aria-hidden="true" />
-      <div className="hero-torch" aria-hidden="true" />
       <SheetSketch />
 
       <div className="relative mx-auto max-w-6xl px-5 pt-8 pb-14 sm:px-8 sm:pt-16 sm:pb-20">
@@ -68,17 +65,16 @@ export function Hero() {
         </div>
 
         <div className="relative z-10 mt-10 sm:mt-16">
-          {/* The name above is the page h1, so the intro is a paragraph. */}
-          <p className="max-w-[26ch] font-display text-[2rem] leading-[1.05] tracking-tight text-ink sm:text-[2.6rem] lg:text-[3rem]">
-            {introWords.map((word, i) => (
-              // The space must sit outside the inline-block, or it collapses.
-              <Fragment key={`${word}-${i}`}>
-                <span className="hero-word" style={{ "--i": i } as CSSProperties}>
-                  {word}
-                </span>
-                {i < introWords.length - 1 ? " " : null}
-              </Fragment>
-            ))}
+          {/*
+            The name above is the page h1, so the intro is a paragraph. It rises as one
+            block with the rest of the stage: a word-by-word cascade made the visitor wait
+            to read the one sentence that says what this page is.
+          */}
+          <p
+            className="hero-rise max-w-[26ch] font-display text-[2rem] leading-[1.05] tracking-tight text-ink sm:text-[2.6rem] lg:text-[3rem]"
+            style={{ "--step": 5 } as CSSProperties}
+          >
+            {profile.intro}
           </p>
 
           <p
@@ -88,28 +84,26 @@ export function Hero() {
             {profile.summary}
           </p>
 
+          {/*
+            Two ways on: the strongest proof on the page, and a way to reach Mehul. Every
+            other section is one click away in the header.
+          */}
           <div
             className="hero-rise mt-8 flex flex-wrap items-center gap-3"
             style={{ "--step": 6 } as CSSProperties}
           >
             <a
-              href="#experience"
+              href="#client-work"
               className="inline-flex min-h-11 items-center bg-accent px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ground hover:bg-ink"
             >
-              Experience
+              See the client work
             </a>
             <a
-              href="#research"
+              href="#contact"
               className="inline-flex min-h-11 items-center border border-line-bright px-5 py-2.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-dim hover:border-accent hover:text-accent"
             >
-              Research
+              Get in touch
             </a>
-            <LinkButton href={`mailto:${profile.email}`} context="email Mehul">
-              Email
-            </LinkButton>
-            <LinkButton href={profile.linkedin} context="Mehul Gupta on LinkedIn">
-              LinkedIn
-            </LinkButton>
           </div>
         </div>
 

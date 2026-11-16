@@ -90,6 +90,8 @@ const getObserver = () => {
  * Returns the cleanup for when the element unmounts first.
  */
 export const watchReveal = (element: Element) => {
+  // Tells the failsafe in app/layout.tsx's head script that the engine is running.
+  document.documentElement.setAttribute("data-reveal-ready", "");
   pending.add(element);
   getObserver().observe(element);
   startListening();

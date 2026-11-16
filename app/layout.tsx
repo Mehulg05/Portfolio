@@ -79,10 +79,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${plexSans.variable} ${plexCondensed.variable} ${plexMono.variable} h-full`}
     >
       <head>
-        {/* Runs before paint so revealed content never flashes in and back out. */}
+        {/*
+          Runs before paint so revealed content never flashes in and back out. If the
+          reveal engine has not started within 4s (a failed or very slow chunk), the gate
+          is lifted so the page is never left blank.
+        */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.classList.add("js-motion")}}catch(e){}`,
+            __html: `try{var d=document.documentElement;if(!matchMedia("(prefers-reduced-motion: reduce)").matches){d.classList.add("js-motion");setTimeout(function(){if(!d.hasAttribute("data-reveal-ready"))d.classList.remove("js-motion")},4000)}}catch(e){}`,
           }}
         />
       </head>
