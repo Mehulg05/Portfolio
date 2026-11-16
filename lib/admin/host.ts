@@ -1,3 +1,4 @@
+import { hostnameOf } from "@/lib/http/request";
 import { siteUrl } from "@/lib/site";
 
 /*
@@ -6,10 +7,6 @@ import { siteUrl } from "@/lib/site";
   ADMIN_HOST=admin.localhost: Chromium resolves *.localhost to loopback.
 */
 export const adminHost = (process.env.ADMIN_HOST || "admin.mehulgupta.me").toLowerCase();
-
-function hostnameOf(hostHeader: string | null) {
-  return hostHeader?.split(":")[0]?.trim().toLowerCase() ?? "";
-}
 
 export function isAdminHost(hostHeader: string | null) {
   return hostnameOf(hostHeader) === adminHost;

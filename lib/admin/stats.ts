@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "@/lib/db/client";
-import type { MessageStatus } from "@/lib/db/messages";
+import { type MessageStatus, isMessageStatus } from "@/lib/db/messages";
 
 /*
   Message numbers for the overview. Days are bucketed by UTC date so the chart agrees with
@@ -34,12 +34,7 @@ export type MessageStats = {
   newest: RecentMessage[];
 };
 
-const statuses: readonly MessageStatus[] = ["new", "read", "replied", "archived"];
 const FIRST_LINE_MAX = 120;
-
-function isStatus(value: unknown): value is MessageStatus {
-  return typeof value === "string" && (statuses as readonly string[]).includes(value);
-}
 
 function toNumberOrNull(value: unknown) {
   if (value === null || value === undefined) return null;
@@ -72,7 +67,7 @@ async function statusCounts() {
     select status, count(*)::int as count from messages group by status
   `;
   const counts: Record<MessageStatus, number> = { new: 0, read: 0, replied: 0, archived: 0 };
-  for (const row of rows) if (isStatus(row.status)) counts[row.status] = row.count;
+  for (const row of rows) if (isMessageStatus(row.status)) counts[row.status] = row.count;
   return counts;
 }
 
@@ -109,7 +104,7 @@ async function newest(limit: number) {
       id: row.id,
       name: row.name,
       firstLine: firstLine(row.body),
-      status: isStatus(row.status) ? row.status : "new",
+      status: isMessageStatus(row.status) ? row.status : "new",
       createdAt: row.createdAt,
     }),
   );

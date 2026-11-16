@@ -13,24 +13,36 @@ export async function recordLoginAttempt(ipHash: string, succeeded: boolean): Pr
   await getDb()`insert into login_attempts (ip_hash, succeeded) values (${ipHash}, ${succeeded})`;
 }
 
+/*
+  Above this many failures across all sources in one window, further failures are not
+  stored. The per-source lockout already bounds one client; this bounds a spread-out flood,
+  so the table cannot be grown without limit by an unauthenticated caller.
+*/
+export const GLOBAL_FAILURE_CEILING = 300;
+
+export type FailureCounts = { source: number; global: number };
+
 /**
- * Failures from this ip_hash inside the window, counted only since its last success: the
- * owner fat-fingering the secret twice before signing in should not carry those two
- * strikes into their next session.
+ * Failures from this ip_hash inside the window, counted only since its last success (the
+ * owner fat-fingering the secret twice should not carry those strikes into the next
+ * session), plus the failures from everyone in the same window.
  */
-export async function countRecentFailures(ipHash: string, windowSeconds: number): Promise<number> {
-  const rows = await getDb()<{ count: number }[]>`
-    select count(*)::int as count
-    from login_attempts
-    where ip_hash = ${ipHash}
-      and succeeded = false
-      and created_at > now() - ${windowSeconds}::int * interval '1 second'
-      and created_at > coalesce(
-        (select max(created_at) from login_attempts where ip_hash = ${ipHash} and succeeded),
-        '-infinity'::timestamptz
-      )
+export async function countRecentFailures(ipHash: string, windowSeconds: number): Promise<FailureCounts> {
+  const [row] = await getDb()<FailureCounts[]>`
+    select
+      (select count(*)::int from login_attempts
+        where ip_hash = ${ipHash}
+          and succeeded = false
+          and created_at > now() - ${windowSeconds}::int * interval '1 second'
+          and created_at > coalesce(
+            (select max(created_at) from login_attempts where ip_hash = ${ipHash} and succeeded),
+            '-infinity'::timestamptz
+          )) as source,
+      (select count(*)::int from login_attempts
+        where succeeded = false
+          and created_at > now() - ${windowSeconds}::int * interval '1 second') as global
   `;
-  return rows[0]?.count ?? 0;
+  return { source: row?.source ?? 0, global: row?.global ?? 0 };
 }
 
 /** Deletes attempts older than the given age; returns how many rows went. */

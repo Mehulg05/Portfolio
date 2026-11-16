@@ -1,3 +1,4 @@
+import { FocusParentOnMount } from "@/app/admin/_ui/FocusParentOnMount";
 import { unarchivedStatus } from "@/app/admin/messages/MessageActions";
 import type { Notice as NoticeKind } from "@/app/admin/messages/url";
 import type { Message } from "@/lib/db/messages";
@@ -22,8 +23,10 @@ export function Notice({ notice, undo, undoReturn }: Props) {
   return (
     <div
       role="status"
-      className="flex min-h-11 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] text-ink-dim"
+      tabIndex={-1}
+      className="flex min-h-11 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] text-ink-dim focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-accent"
     >
+      <FocusParentOnMount />
       <p className="min-w-0 truncate">
         {canUndo ? (
           <>

@@ -3,9 +3,9 @@
   has no client JS, so "3h ago" is accurate when the page loads and is never hydrated
   against a different clock.
 */
+import { OWNER_TIME_ZONE } from "@/lib/db/retention";
 
-// Vercel renders in UTC; pinning the owner's zone keeps absolute times readable at a glance.
-const OWNER_TIME_ZONE = "Asia/Kolkata";
+// Vercel renders in UTC; pinning the owner's zone (OWNER_TIME_ZONE) keeps absolute times readable at a glance.
 
 // numeric "always" keeps every label in the same "3d ago" shape; "auto" mixes in "last wk.".
 const relative = new Intl.RelativeTimeFormat("en", { numeric: "always", style: "narrow" });

@@ -11,7 +11,8 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:inspect": "node scripts/db-inspect.mjs",
     "db:prune": "node scripts/db-prune.mjs",
-    "test": "node --test --experimental-strip-types 'lib/**/*.test.mjs'"
+    "db:seed-pulse": "node scripts/db-seed-pulse.mjs",
+    "test": "node --test --experimental-strip-types --import ./scripts/test-register.mjs 'lib/**/*.test.mjs'"
   },
   "dependencies": {
     "next": "16.4.6",

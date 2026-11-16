@@ -3,17 +3,14 @@ import { messageCsvFilename, messageCsvHeader, messageCsvRow } from "@/lib/admin
 import { hasAdminSession } from "@/lib/admin/auth";
 import { isDatabaseConfigured } from "@/lib/db/client";
 import { type MessagePage, type MessagePageQuery, listMessagesPage } from "@/lib/db/messages";
-import { errorClass } from "@/lib/admin/health";
+import { OWNER_TIME_ZONE } from "@/lib/db/retention";
+import { errorClass } from "@/lib/http/error";
+import { textResponse as text } from "@/lib/http/response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BATCH_SIZE = 500;
-const OWNER_TIME_ZONE = "Asia/Kolkata";
-
-function text(body: string, status: number) {
-  return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
-}
 
 function encodePage(page: MessagePage) {
   return page.items.map(messageCsvRow).join("");

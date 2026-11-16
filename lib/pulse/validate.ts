@@ -35,7 +35,7 @@ export type PulseEvent = PulseView | PulseLeave;
 export type PulseValidation = { ok: true; value: PulseEvent } | { ok: false };
 
 export const pulseLimits = {
-  pathMax: 200,
+  pathMax: 100,
   hostMax: 253,
   secondsMax: 86_400,
   sectionsMax: 30,
@@ -67,7 +67,7 @@ function readViewId(value: unknown) {
 }
 
 /** The path without query or hash, or null when it is not a plain site path. */
-export function readPath(value: unknown) {
+function readPath(value: unknown) {
   if (typeof value !== "string") return null;
   const path = value.split(/[?#]/, 1)[0] ?? "";
   if (!path.startsWith("/") || path.length > pulseLimits.pathMax) return null;

@@ -1,12 +1,28 @@
 import "server-only";
 import { getDb } from "@/lib/db/client";
+import {
+  type MessageStatus,
+  type MessageView,
+  MAX_PAGE_SIZE,
+  decodeCursor,
+  encodeCursor,
+  isMessageStatus,
+  isUuid,
+  likePattern,
+  normaliseSearch,
+} from "@/lib/db/messages-model";
 
-export const messageStatuses = ["new", "read", "replied", "archived"] as const;
-export type MessageStatus = (typeof messageStatuses)[number];
-
-/** What a list can be filtered to: one status, or "inbox" for everything not archived. */
-export const messageViews = ["inbox", ...messageStatuses] as const;
-export type MessageView = (typeof messageViews)[number];
+export {
+  type MessageStatus,
+  type MessageView,
+  MAX_SEARCH_LENGTH,
+  isMessageStatus,
+  isMessageView,
+  isUuid,
+  messageStatuses,
+  messageViews,
+  normaliseSearch,
+} from "@/lib/db/messages-model";
 
 export type Message = {
   id: string;
@@ -47,51 +63,58 @@ export type MessagePage = {
 
 export type MessageCounts = Record<MessageStatus, number> & { inbox: number };
 
-export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export type SubmissionLimits = {
+  ipHour: number;
+  ipDay: number;
+  emailDay: number;
+  /** Across every sender: the form must not be usable to fill the shared database or the mail quota. */
+  globalHour: number;
+  globalDay: number;
+};
 
-/** Search terms past this length are cut; nobody types more, and ILIKE cost grows with it. */
-export const MAX_SEARCH_LENGTH = 200;
-const MAX_PAGE_SIZE = 500;
+export type InsertResult = { ok: true; id: string } | { ok: false; retryAfterSeconds: number };
 
-export function isMessageStatus(value: unknown): value is MessageStatus {
-  return typeof value === "string" && (messageStatuses as readonly string[]).includes(value);
-}
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
+// Arbitrary constant naming the lock that serialises contact submissions.
+const SUBMIT_LOCK_KEY = 7_340_212;
 
-export function isMessageView(value: unknown): value is MessageView {
-  return typeof value === "string" && (messageViews as readonly string[]).includes(value);
-}
-
-export function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
-}
-
-export async function insertMessage(input: NewMessage) {
-  const [row] = await getDb()<{ id: string }[]>`
-    insert into messages (name, email, message, ip_hash, user_agent)
-    values (${input.name}, ${input.email}, ${input.message}, ${input.ipHash}, ${input.userAgent})
-    returning id
-  `;
-  if (!row) throw new Error("Insert returned no row.");
-  return row.id;
-}
-
-export async function countRecentByIp(ipHash: string, windowSeconds: number) {
-  const [row] = await getDb()<{ count: number }[]>`
-    select count(*)::int as count from messages
-    where ip_hash = ${ipHash}
-      and created_at > now() - make_interval(secs => ${windowSeconds})
-  `;
-  return row?.count ?? 0;
-}
-
-// Matched case-insensitively so "A@x.com" and "a@x.com" share one window.
-export async function countRecentByEmail(email: string, windowSeconds: number) {
-  const [row] = await getDb()<{ count: number }[]>`
-    select count(*)::int as count from messages
-    where lower(email) = lower(${email})
-      and created_at > now() - make_interval(secs => ${windowSeconds})
-  `;
-  return row?.count ?? 0;
+/*
+  Checks every window and inserts in one transaction under an advisory lock, so concurrent
+  submissions take turns and each sees the previous row: the limits are exact, not
+  best-effort. The form gets a few messages a week, so the lock is never contended in practice.
+  A full window answers with its own length as Retry-After (an upper bound, not the moment
+  the oldest row ages out); the answer is identical for per-sender and global limits.
+*/
+export async function insertMessageWithinLimits(input: NewMessage, limits: SubmissionLimits): Promise<InsertResult> {
+  return getDb().begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(${SUBMIT_LOCK_KEY})`;
+    const [use] = await tx<
+      { ipHour: number; ipDay: number; emailDay: number; globalHour: number; globalDay: number }[]
+    >`
+      select
+        count(*) filter (where ip_hash = ${input.ipHash} and created_at > now() - ${HOUR}::int * interval '1 second')::int as "ipHour",
+        count(*) filter (where ip_hash = ${input.ipHash})::int as "ipDay",
+        count(*) filter (where lower(email) = lower(${input.email}))::int as "emailDay",
+        count(*) filter (where created_at > now() - ${HOUR}::int * interval '1 second')::int as "globalHour",
+        count(*)::int as "globalDay"
+      from messages
+      where created_at > now() - ${DAY}::int * interval '1 second'
+    `;
+    if (use) {
+      if (use.ipHour >= limits.ipHour || use.globalHour >= limits.globalHour) return { ok: false, retryAfterSeconds: HOUR };
+      if (use.ipDay >= limits.ipDay || use.emailDay >= limits.emailDay || use.globalDay >= limits.globalDay) {
+        return { ok: false, retryAfterSeconds: DAY };
+      }
+    }
+    const [row] = await tx<{ id: string }[]>`
+      insert into messages (name, email, message, ip_hash, user_agent)
+      values (${input.name}, ${input.email}, ${input.message}, ${input.ipHash}, ${input.userAgent})
+      returning id
+    `;
+    if (!row) throw new Error("Insert returned no row.");
+    return { ok: true, id: row.id } as const;
+  }) as Promise<InsertResult>;
 }
 
 export async function markNotified(id: string) {
@@ -104,37 +127,6 @@ function columns() {
     notified_at as "notifiedAt", read_at as "readAt", replied_at as "repliedAt",
     archived_at as "archivedAt"
   `;
-}
-
-/*
-  Cursor = base64url("<created_at to the microsecond>|<id>"). The timestamp comes from SQL as
-  text rather than from the JS Date, which only holds milliseconds: a millisecond-truncated
-  cursor would sort before its own row and silently skip neighbours inside that millisecond.
-*/
-const CURSOR_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
-
-function encodeCursor(time: string, id: string) {
-  return Buffer.from(`${time}|${id}`, "utf8").toString("base64url");
-}
-
-function decodeCursor(cursor: string | null | undefined) {
-  if (!cursor || cursor.length > 128 || !/^[A-Za-z0-9_-]+$/.test(cursor)) return null;
-  const [time, id, ...rest] = Buffer.from(cursor, "base64url").toString("utf8").split("|");
-  if (rest.length > 0 || !time || !id || !CURSOR_TIME_PATTERN.test(time) || !isUuid(id)) return null;
-  // A well-shaped but impossible date (month 13, Feb 30) would make Postgres throw.
-  const parsed = new Date(time);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 23) !== time.slice(0, 23)) return null;
-  return { time, id: id.toLowerCase() };
-}
-
-/** Escapes LIKE metacharacters so the user's term matches literally (backslash is the escape). */
-function likePattern(term: string) {
-  return `%${term.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
-}
-
-export function normaliseSearch(q: unknown) {
-  if (typeof q !== "string") return "";
-  return q.trim().slice(0, MAX_SEARCH_LENGTH);
 }
 
 function searchClause(q: string) {
@@ -210,16 +202,6 @@ export async function getMessage(id: string): Promise<Message | null> {
   if (!isUuid(id)) return null;
   const [row] = await getDb()<Message[]>`select ${columns()} from messages where id = ${id}`;
   return row ?? null;
-}
-
-/** @deprecated Unbounded by design; the panel uses listMessagesPage. */
-export async function listMessages(limit = 200) {
-  return getDb()<Message[]>`
-    select ${columns()}
-    from messages
-    order by created_at desc
-    limit ${limit}
-  `;
 }
 
 /*
